@@ -1,0 +1,173 @@
+// ============================
+// Game Magazine - Prisma Schema
+// ============================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================
+// Enums
+// ============================
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Provider {
+  EMAIL
+  GOOGLE
+}
+
+// ============================
+// 유저
+// ============================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String?  // OAuth 유저는 null
+  nickname     String   @unique
+  profileImage String?  @map("profile_image")
+  role         Role     @default(USER)
+  provider     Provider @default(EMAIL)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  posts    Post[]
+  comments Comment[]
+
+  @@map("users")
+}
+
+// ============================
+// 이메일 인증
+// ============================
+
+model EmailVerification {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  code       String
+  expiresAt  DateTime @map("expires_at")
+  isVerified Boolean  @default(false) @map("is_verified")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("email_verifications")
+}
+
+// ============================
+// 커뮤니티 카테고리 (계층형)
+// ============================
+
+model Category {
+  id       Int    @id @default(autoincrement())
+  name     String @unique
+  slug     String @unique
+  parentId Int?   @map("parent_id")
+
+  parent   Category?  @relation("CategoryChildren", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryChildren")
+  posts    Post[]
+
+  @@index([parentId])
+  @@map("categories")
+}
+
+// ============================
+// 커뮤니티 게시글
+// ============================
+
+model Post {
+  id         Int       @id @default(autoincrement())
+  title      String    @db.VarChar(255)
+  content    String    @db.Text
+  viewCount  Int       @default(0) @map("view_count")
+  authorId   String    @map("author_id")
+  categoryId Int       @map("category_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  author   User      @relation(fields: [authorId], references: [id])
+  category Category  @relation(fields: [categoryId], references: [id])
+  comments Comment[]
+
+  @@index([authorId])
+  @@index([categoryId])
+  @@index([createdAt(sort: Desc)])
+  @@map("posts")
+}
+
+// ============================
+// 커뮤니티 댓글
+// ============================
+
+model Comment {
+  id        Int       @id @default(autoincrement())
+  content   String    @db.Text
+  postId    Int       @map("post_id")
+  authorId  String    @map("author_id")
+  parentId  Int?      @map("parent_id")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id])
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// ============================
+// 뉴스 카테고리 (커뮤니티와 완전 분리)
+// ============================
+
+model NewsCategory {
+  id       Int    @id @default(autoincrement())
+  name     String @unique
+  slug     String @unique
+  parentId Int?   @map("parent_id")
+
+  parent   NewsCategory?  @relation("NewsCategoryChildren", fields: [parentId], references: [id])
+  children NewsCategory[] @relation("NewsCategoryChildren")
+  news     News[]
+
+  @@index([parentId])
+  @@map("news_categories")
+}
+
+// ============================
+// 뉴스 (커뮤니티와 완전 분리)
+// ============================
+
+model News {
+  id             Int       @id @default(autoincrement())
+  title          String    @db.VarChar(255)
+  content        String    @db.Text
+  thumbnail      String?
+  slug           String    @unique
+  newsCategoryId Int       @map("news_category_id")
+  viewCount      Int       @default(0) @map("view_count")
+  isPublished    Boolean   @default(false) @map("is_published")
+  publishedAt    DateTime? @map("published_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  newsCategory NewsCategory @relation(fields: [newsCategoryId], references: [id])
+
+  @@index([slug])
+  @@index([newsCategoryId])
+  @@index([publishedAt(sort: Desc)])
+  @@map("news")
+}
