@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* 라이트 모드 컬러 */
+  --color-background: #ffffff;
+  --color-surface: #f4f4f5;
+  --color-surface-hover: #e4e4e7;
+  --color-border: #d4d4d8;
+  --color-text-primary: #09090b;
+  --color-text-secondary: #52525b;
+  --color-text-muted: #a1a1aa;
+  --color-primary: #18181b;
+  --color-primary-hover: #3f3f46;
+  --color-primary-foreground: #fafafa;
+
+  /* 타이포그래피 */
+  --font-heading: var(--font-pretendard), sans-serif;
+  --font-body: var(--font-pretendard), sans-serif;
+}
+
+.dark {
+  /* 다크 모드 컬러 */
+  --color-background: #09090b;
+  --color-surface: #18181b;
+  --color-surface-hover: #27272a;
+  --color-border: #27272a;
+  --color-text-primary: #fafafa;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
+  --color-primary: #fafafa;
+  --color-primary-hover: #e4e4e7;
+  --color-primary-foreground: #09090b;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+  }
+}
