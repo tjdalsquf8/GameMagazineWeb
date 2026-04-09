@@ -1,0 +1,80 @@
+// [Game Magazine Project] Database Schema
+
+// 1. 유저 정보
+Table users {
+  id            uuid [pk]
+  email         varchar [unique, not null]
+  password      varchar [note: 'Nullable for OAuth']
+  nickname      varchar [unique, not null]
+  profile_image varchar
+  role          varchar [default: 'USER', note: 'USER, ADMIN']
+  provider      varchar [default: 'EMAIL', note: 'EMAIL, GOOGLE']
+  created_at    timestamp [default: `now()`]
+  updated_at    timestamp
+}
+
+// 2. 이메일 인증
+Table email_verifications {
+  id          integer [pk, increment]
+  email       varchar [unique, not null]
+  code        varchar [not null]
+  expires_at  timestamp [not null]
+  is_verified boolean [default: false]
+  created_at  timestamp [default: `now()`]
+}
+
+// 3. 카테고리 (계층형)
+Table categories {
+  id         integer [pk, increment]
+  name       varchar [unique, not null]
+  slug       varchar [unique, not null, note: 'URL용 슬러그']
+  parent_id  integer [note: 'Self-relation for hierarchy']
+  
+  Indexes {
+    parent_id
+  }
+}
+
+// 4. 게시글
+Table posts {
+  id          integer [pk, increment]
+  title       varchar(255) [not null]
+  content     text [not null]
+  view_count  integer [default: 0]
+  author_id   uuid [not null]
+  category_id integer [not null]
+  created_at  timestamp [default: `now()`]
+  updated_at  timestamp
+  deleted_at  timestamp [note: 'Soft Delete']
+
+  Indexes {
+    author_id
+    category_id
+    created_at
+  }
+}
+
+// 5. 댓글
+Table comments {
+  id          integer [pk, increment]
+  content     text [not null]
+  post_id     integer [not null]
+  author_id   uuid [not null]
+  parent_id   integer [note: 'Self-relation for replies']
+  created_at  timestamp [default: `now()`]
+  updated_at  timestamp
+  deleted_at  timestamp
+
+  Indexes {
+    post_id
+    parent_id
+  }
+}
+
+// 관계 설정 (Foreign Keys)
+Ref: posts.author_id > users.id
+Ref: posts.category_id > categories.id
+Ref: comments.post_id > posts.id [delete: cascade]
+Ref: comments.author_id > users.id
+Ref: comments.parent_id > comments.id
+Ref: categories.parent_id > categories.id

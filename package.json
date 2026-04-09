@@ -16,5 +16,15 @@
   },
   "dependencies": {
     "pnpm": "^10.33.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "prisma",
+      "unrs-resolver"
+    ]
   }
 }
