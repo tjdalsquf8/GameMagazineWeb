@@ -10,12 +10,13 @@ interface PostPageProps {
   params: { id: string }
 }
 
-export default function PostPage({ params: _ }: PostPageProps) {
-  // 추후 API 연동 시 params.id로 특정 게시글 조회
+export default function PostPage({ params }: PostPageProps) {
+  const postId = Number(params.id)
+
   return (
     <div className="max-w-[800px]">
-      <PostDetail />
-      <CommentList />
+      <PostDetail postId={postId} />
+      <CommentList postId={postId} />
     </div>
   )
 }
