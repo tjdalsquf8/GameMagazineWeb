@@ -1,19 +1,102 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { mockCategories } from '@/lib/mock/community'
+// WriteForm.tsx
+// 커뮤니티 게시글 작성 폼 컴포넌트
+// ContentEditor(리치텍스트)와 ImageUploadModal을 조합하여 이미지 포함 글 작성 지원
+// 제출 전 sanitizeHTML로 XSS 방지 처리
 
-// 하위 카테고리만 필터 (parentId가 null이 아닌 것)
-const leafCategories = mockCategories.filter((c) => c.parentId !== null)
+import { useState, useEffect, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { COMMUNITY_CATEGORIES } from '@/constants/gamecategory'
+import { createPost } from '@/lib/api/posts'
+import { useAuth } from '@/hooks/useAuth'
+import { useToastStore } from '@/store/toastStore'
+import { sanitizeHTML } from '@/lib/utils/sanitize'
+import ContentEditor, { type ContentEditorHandle } from '@/components/ui/ContentEditor'
+import ImageUploadModal from '@/components/ui/ImageUploadModal'
+
+// 최대 이미지 업로드 수
+const MAX_IMAGE_COUNT = 5
 
 export default function WriteForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const { isAuthenticated, accessToken } = useAuth()
+  const { showToast } = useToastStore()
+
   const [categoryId, setCategoryId] = useState<string>('')
   const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
+  const [content, setContent] = useState('') // HTML 문자열
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [uploadedImageCount, setUploadedImageCount] = useState(0)
 
-  const isSubmitEnabled = categoryId !== '' && title.trim() !== ''
+  // ContentEditor 메서드(insertImages) 호출을 위한 ref
+  const editorRef = useRef<ContentEditorHandle>(null)
+
+  // URL의 category 파라미터를 감지하여 카테고리 초기값 설정
+  useEffect(() => {
+    const categorySlug = searchParams.get('category')
+
+    if (categorySlug && categorySlug !== 'all') {
+      const targetCategory = COMMUNITY_CATEGORIES.flatMap((parent) => parent.children || []).find(
+        (child) => child.slug === categorySlug
+      )
+
+      if (targetCategory) {
+        setCategoryId(String(targetCategory.id))
+      }
+    }
+  }, [searchParams])
+
+  // content가 변경될 때 삽입된 이미지 수 동기화
+  useEffect(() => {
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(content, 'text/html')
+    const imgCount = doc.querySelectorAll('img').length
+    setUploadedImageCount(imgCount)
+  }, [content])
+
+  const isSubmitEnabled = categoryId !== '' && title.trim() !== '' && !isSubmitting
+
+  /** 게시글 등록 처리 — content를 sanitize 후 전송 */
+  const handleSubmit = async () => {
+    if (!isAuthenticated) {
+      router.push('/login')
+      return
+    }
+
+    if (!accessToken) {
+      showToast('로그인이 필요합니다', 'error')
+      return
+    }
+
+    if (categoryId === '' || title.trim() === '') return
+
+    setIsSubmitting(true)
+    try {
+      const sanitizedContent = sanitizeHTML(content)
+      const post = await createPost(
+        {
+          title: title.trim(),
+          content: sanitizedContent,
+          categoryId: Number(categoryId),
+        },
+        accessToken
+      )
+      showToast('게시글이 등록되었습니다', 'success')
+      router.push(`/community/${post.id}`)
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '게시글 등록에 실패했습니다', 'error')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  /** 이미지 업로드 완료 — 에디터 커서 위치에 이미지 삽입 */
+  const handleImagesUploaded = (urls: string[]) => {
+    editorRef.current?.insertImages(urls)
+  }
 
   return (
     <div className="w-full max-w-[800px] mx-auto py-8 px-4">
@@ -32,10 +115,14 @@ export default function WriteForm() {
             className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-text-primary focus:outline-none focus:border-primary transition-colors"
           >
             <option value="">카테고리를 선택해주세요</option>
-            {leafCategories.map((cat) => (
-              <option key={cat.id} value={String(cat.id)}>
-                {cat.name}
-              </option>
+            {COMMUNITY_CATEGORIES.map((parent) => (
+              <optgroup key={parent.id} label={parent.name}>
+                {parent.children?.map((child) => (
+                  <option key={child.id} value={String(child.id)}>
+                    {child.name}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
         </div>
@@ -59,16 +146,21 @@ export default function WriteForm() {
           </div>
         </div>
 
-        {/* 본문 */}
+        {/* 본문 — ContentEditor (리치텍스트) */}
         <div>
           <label className="block text-sm font-medium text-text-secondary mb-1.5">본문</label>
-          <textarea
+          <ContentEditor
+            ref={editorRef}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
+            onImageButtonClick={() => setIsImageModalOpen(true)}
             placeholder="내용을 입력해주세요"
-            className="w-full border border-border rounded px-3 py-2 text-sm bg-background text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors resize-none"
-            style={{ minHeight: '400px' }}
           />
+          <div className="flex justify-end mt-1">
+            <span className="text-xs text-text-muted">
+              이미지 {uploadedImageCount} / {MAX_IMAGE_COUNT}
+            </span>
+          </div>
         </div>
 
         {/* 버튼 */}
@@ -82,6 +174,7 @@ export default function WriteForm() {
           </button>
           <button
             type="button"
+            onClick={handleSubmit}
             disabled={!isSubmitEnabled}
             className={[
               'px-5 py-2 text-sm rounded transition-colors duration-150',
@@ -90,10 +183,19 @@ export default function WriteForm() {
                 : 'bg-surface text-text-muted cursor-not-allowed',
             ].join(' ')}
           >
-            등록
+            {isSubmitting ? '등록 중...' : '등록'}
           </button>
         </div>
       </div>
+
+      {/* 이미지 업로드 모달 */}
+      <ImageUploadModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        onUpload={handleImagesUploaded}
+        currentCount={uploadedImageCount}
+        maxCount={MAX_IMAGE_COUNT}
+      />
     </div>
   )
 }

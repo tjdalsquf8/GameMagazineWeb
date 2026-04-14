@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import localFont from 'next/font/local'
 import '@/styles/globals.css'
+import ToastContainer from '@/components/ui/ToastContainer'
 
 const pretendard = localFont({
   src: [
@@ -22,7 +23,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" className={pretendard.variable}>
-      <body className={pretendard.className}>{children}</body>
+      <body className={pretendard.className}>
+        {children}
+        <ToastContainer />
+      </body>
     </html>
   )
 }

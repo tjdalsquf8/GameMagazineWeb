@@ -1,19 +1,28 @@
-import Link from 'next/link'
-import { mockPopularPosts } from '@/lib/mock/community'
+'use client'
 
-export default function PopularPostsWidget() {
+import Link from 'next/link'
+import type { Post } from '@/types/community' // Post 타입 임포트
+
+interface PopularPostsWidgetProps {
+  posts?: Post[] // 외부(페이지)에서 인기글 데이터를 받아옴
+}
+
+export default function PopularPostsWidget({ posts = [] }: PopularPostsWidgetProps) {
+  // 만약 데이터가 없으면 위젯 자체를 숨기거나 빈 상태 메시지를 보여줍니다.
+  if (posts.length === 0) return null
+
   return (
     <aside className="w-[240px] shrink-0">
-      <div className="border border-border rounded-md overflow-hidden">
-        <div className="px-3 py-2 bg-surface border-b border-border">
+      <div className="border border-border rounded-md overflow-hidden bg-white">
+        <div className="px-3 py-2 bg-slate-50 border-b border-border">
           <span className="text-sm font-semibold text-text-primary">🔥 실시간 인기글</span>
         </div>
         <ol className="py-1">
-          {mockPopularPosts.map((post, index) => (
+          {posts.map((post, index) => (
             <li key={post.id}>
               <Link
                 href={`/community/${post.id}`}
-                className="flex items-start gap-2 px-3 py-2 hover:bg-surface transition-colors duration-150"
+                className="flex items-start gap-2 px-3 py-2 hover:bg-slate-50 transition-colors duration-150"
               >
                 <span
                   className={[

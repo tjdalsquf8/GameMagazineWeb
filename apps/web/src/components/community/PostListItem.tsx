@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import type { MockPost } from '@/lib/mock/community'
+import type { Post } from '@/types/community'
 
 interface PostListItemProps {
-  post: MockPost
+  post: Post
   index: number
 }
 
@@ -23,6 +23,8 @@ function formatDate(isoString: string): string {
 }
 
 export default function PostListItem({ post, index }: PostListItemProps) {
+  const commentCount = post._count.comments
+
   return (
     <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
       <td className="py-3 px-3 text-sm text-text-muted text-center w-12">{index + 1}</td>
@@ -37,8 +39,8 @@ export default function PostListItem({ post, index }: PostListItemProps) {
           className="text-sm text-text-primary hover:underline line-clamp-1"
         >
           {post.title}
-          {post.commentCount > 0 && (
-            <span className="ml-1.5 text-xs font-medium text-primary">[{post.commentCount}]</span>
+          {commentCount > 0 && (
+            <span className="ml-1.5 text-xs font-medium text-primary">[{commentCount}]</span>
           )}
         </Link>
       </td>
@@ -50,6 +52,13 @@ export default function PostListItem({ post, index }: PostListItemProps) {
       </td>
       <td className="py-3 px-3 text-sm text-text-muted text-center w-16 hidden sm:table-cell">
         {post.viewCount.toLocaleString()}
+      </td>
+      <td className="py-3 px-3 text-sm text-center w-16 hidden sm:table-cell">
+        {(post._count.postRecommends ?? 0) > 0 ? (
+          <span className="text-primary font-small">{post._count.postRecommends}</span>
+        ) : (
+          <span className="text-text-muted">-</span>
+        )}
       </td>
     </tr>
   )
