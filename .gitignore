@@ -48,3 +48,5 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+
+apps/api/src/auth/flow.md

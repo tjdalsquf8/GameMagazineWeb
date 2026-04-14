@@ -40,8 +40,11 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  posts    Post[]
-  comments Comment[]
+  posts             Post[]
+  comments          Comment[]
+  postLikes         PostLike[]
+  postRecommends    PostRecommend[]
+  commentRecommends CommentRecommend[]
 
   @@map("users")
 }
@@ -59,6 +62,20 @@ model EmailVerification {
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@map("email_verifications")
+}
+
+// ============================
+// 비밀번호 재설정 토큰
+// ============================
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  code      String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_reset_tokens")
 }
 
 // ============================
@@ -87,6 +104,7 @@ model Post {
   id         Int       @id @default(autoincrement())
   title      String    @db.VarChar(255)
   content    String    @db.Text
+  images     String[]  @default([])
   viewCount  Int       @default(0) @map("view_count")
   authorId   String    @map("author_id")
   categoryId Int       @map("category_id")
@@ -94,9 +112,11 @@ model Post {
   updatedAt  DateTime  @updatedAt @map("updated_at")
   deletedAt  DateTime? @map("deleted_at")
 
-  author   User      @relation(fields: [authorId], references: [id])
-  category Category  @relation(fields: [categoryId], references: [id])
-  comments Comment[]
+  author         User            @relation(fields: [authorId], references: [id])
+  category       Category        @relation(fields: [categoryId], references: [id])
+  comments       Comment[]
+  postLikes      PostLike[]
+  postRecommends PostRecommend[]
 
   @@index([authorId])
   @@index([categoryId])
@@ -118,10 +138,11 @@ model Comment {
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author  User      @relation(fields: [authorId], references: [id])
-  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies Comment[] @relation("CommentReplies")
+  post              Post               @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author            User               @relation(fields: [authorId], references: [id])
+  parent            Comment?           @relation("CommentReplies", fields: [parentId], references: [id])
+  replies           Comment[]          @relation("CommentReplies")
+  commentRecommends CommentRecommend[]
 
   @@index([postId])
   @@index([parentId])
@@ -141,6 +162,44 @@ model PostLike {
   @@map("post_likes")
 }
 
+
+// ============================
+// 게시글 추천
+// ============================
+
+model PostRecommend {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId String @map("user_id")
+  postId Int    @map("post_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("post_recommends")
+}
+
+// ============================
+// 댓글 추천
+// ============================
+
+model CommentRecommend {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId    String @map("user_id")
+  commentId Int    @map("comment_id")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@index([commentId])
+  @@map("comment_recommends")
+}
 
 // ============================
 // 뉴스 카테고리 (커뮤니티와 완전 분리)

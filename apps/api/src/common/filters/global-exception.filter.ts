@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common'
+import { ThrottlerException } from '@nestjs/throttler'
 import { Response } from 'express'
 
 interface ValidationErrorResponse {
@@ -21,6 +22,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp()
     const response = ctx.getResponse<Response>()
+
+    if (exception instanceof ThrottlerException) {
+      return response.status(HttpStatus.TOO_MANY_REQUESTS).json({
+        success: false,
+        error: {
+          code: 'RATE_LIMIT_EXCEEDED',
+          message: '잠시 후 다시 시도해주세요. (5분에 3회 제한)',
+        },
+      })
+    }
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus()

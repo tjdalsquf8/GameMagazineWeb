@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module'
 import { AuthModule } from './auth/auth.module'
 import { PostsModule } from './posts/posts.module'
 import { CommentsModule } from './comments/comments.module'
+import { UploadModule } from './uploads/upload.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 
 @Module({
@@ -25,6 +26,7 @@ import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
     AuthModule,
     PostsModule,
     CommentsModule,
+    UploadModule,
   ],
   providers: [
     {
