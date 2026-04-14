@@ -28,9 +28,13 @@ export async function getPosts(params?: GetPostsParams): Promise<PostListRespons
   const path = query ? `/posts?${query}` : '/posts'
   const res = await apiClient.get<PostListResponse>(path)
 
-  // GET /posts 는 success 래퍼 없이 직접 { items, total, page, limit, totalPages } 반환
   if ('success' in res && !res.success) {
     throw new Error((res as { success: false; error: { message: string } }).error.message)
+  }
+
+  // GET /posts 가 { success: true, data: { items, total, ... } } 포맷으로 응답하는 경우 unwrap
+  if ('success' in res && res.success && 'data' in res) {
+    return (res as ApiSuccess<PostListResponse>).data
   }
 
   return res as unknown as PostListResponse

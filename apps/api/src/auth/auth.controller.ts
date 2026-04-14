@@ -106,7 +106,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     const result = await this.authService.forgotPassword(dto)
-    return { success: true, message: result.message }
+    return { success: true, data: { message: result.message } }
   }
 
   @Post('verify-reset-token')
@@ -120,6 +120,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async resetPassword(@Body() dto: ResetPasswordDto) {
     const result = await this.authService.resetPassword(dto)
-    return { success: true, message: result.message }
+    return { success: true, data: { message: result.message } }
   }
 }

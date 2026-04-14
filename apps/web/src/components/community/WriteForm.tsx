@@ -34,6 +34,13 @@ export default function WriteForm() {
   // ContentEditor 메서드(insertImages) 호출을 위한 ref
   const editorRef = useRef<ContentEditorHandle>(null)
 
+  // 초기 마운트 시 비로그인이면 즉시 /login 으로 리다이렉트
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, router])
+
   // URL의 category 파라미터를 감지하여 카테고리 초기값 설정
   useEffect(() => {
     const categorySlug = searchParams.get('category')

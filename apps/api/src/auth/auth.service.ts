@@ -215,10 +215,7 @@ export class AuthService {
       expiresIn: "24h",
     });
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>(
-        "JWT_REFRESH_SECRET",
-        "default-refresh-secret",
-      ),
+      secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
       expiresIn: "30d",
     });
 
@@ -245,10 +242,7 @@ export class AuthService {
       const payload = this.jwtService.verify<{ sub: string; email: string }>(
         refreshToken,
         {
-          secret: this.configService.get<string>(
-            "JWT_REFRESH_SECRET",
-            "default-refresh-secret",
-          ),
+          secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
         },
       );
 
