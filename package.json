@@ -15,6 +15,7 @@
     "pnpm": ">=9.0.0"
   },
   "dependencies": {
+    "lucide-react": "^1.8.0",
     "pnpm": "^10.33.0"
   },
   "pnpm": {
