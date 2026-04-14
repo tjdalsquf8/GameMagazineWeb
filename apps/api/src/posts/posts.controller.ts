@@ -45,7 +45,8 @@ export class PostsController {
   /** GET /posts — 게시글 목록 조회 */
   @Get()
   async findAll(@Query() query: PostQueryDto) {
-    return this.postsService.findAll(query)
+    const data = await this.postsService.findAll(query)
+    return { success: true, data }
   }
 
   /** GET /posts/:postId — 게시글 단건 조회 (조회수 증가 없음, 로그인 시 isRecommended 포함) */

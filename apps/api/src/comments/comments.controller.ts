@@ -47,7 +47,8 @@ export class CommentsController {
     @Param('postId', ParseIntPipe) postId: number,
     @Req() req: OptionalAuthRequest,
   ) {
-    return this.commentsService.findAllByPost(postId, req.user?.id)
+    const data = await this.commentsService.findAllByPost(postId, req.user?.id)
+    return { success: true, data }
   }
 
   /** POST /posts/:postId/comments — 댓글 생성 (인증 필요) */
