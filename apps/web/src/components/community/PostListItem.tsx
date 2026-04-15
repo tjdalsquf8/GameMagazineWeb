@@ -26,7 +26,7 @@ export default function PostListItem({ post, index }: PostListItemProps) {
   const commentCount = post._count.comments
 
   return (
-    <tr className="border-b border-gray-100 hover:bg-gray-50 transition-colors duration-150">
+    <tr className="border-b border-[var(--color-border)] hover:bg-[var(--color-surface)] transition-colors duration-150">
       <td className="py-3 px-3 text-sm text-text-muted text-center w-12">{index + 1}</td>
       <td className="py-3 px-2 w-24">
         <span className="inline-block px-2 py-0.5 text-xs rounded bg-surface text-text-secondary">

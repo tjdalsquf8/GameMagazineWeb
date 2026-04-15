@@ -70,9 +70,9 @@ export default function PostList() {
         sort,
         search: search || undefined,
       })
-      setPosts(res.items)
-      setTotal(res.total)
-      setTotalPages(res.totalPages)
+      setPosts(res.items ?? [])
+      setTotal(res.total ?? 0)
+      setTotalPages(res.totalPages ?? 1)
     } catch (err) {
       setError(err instanceof Error ? err.message : '게시글을 불러오는데 실패했습니다')
     } finally {
@@ -114,7 +114,7 @@ export default function PostList() {
     router.replace(`/community?${params.toString()}`, { scroll: false })
   }
 
-  const isSearching = search.length > 0
+  const isSearching = (search?.length ?? 0) > 0
 
   return (
     <div className="flex-1 min-w-0">
@@ -126,7 +126,7 @@ export default function PostList() {
 
         {categorySlug !== 'all' && (
           <>
-            <span className="text-gray-400">/</span>
+            <span className="text-[var(--color-text-muted)]">/</span>
             {parentCategory ? (
               <>
                 <Link
@@ -135,7 +135,7 @@ export default function PostList() {
                 >
                   {parentCategory.name}
                 </Link>
-                <span className="text-gray-400">/</span>
+                <span className="text-[var(--color-text-muted)]">/</span>
               </>
             ) : null}
             <span className="font-medium text-text-secondary">{categoryName}</span>
@@ -174,7 +174,7 @@ export default function PostList() {
         </div>
       </div>
 
-      <div className="border border-border rounded-md overflow-hidden bg-white">
+      <div className="border border-[var(--color-border)] rounded-md overflow-hidden bg-[var(--color-background)]">
         <table className="w-full">
           <thead className="bg-surface border-b border-border">
             <tr>
