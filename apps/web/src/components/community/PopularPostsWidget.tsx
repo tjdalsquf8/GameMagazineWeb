@@ -40,8 +40,8 @@ export default function PopularPostsWidget() {
 
   return (
     <aside className="w-[240px] shrink-0">
-      <div className="border border-border rounded-md overflow-hidden bg-white">
-        <div className="px-3 py-2 bg-slate-50 border-b border-border">
+      <div className="border border-[var(--color-border)] rounded-md overflow-hidden bg-[var(--color-background)]">
+        <div className="px-3 py-2 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
           <span className="text-sm font-semibold text-text-primary">🔥 실시간 인기글</span>
         </div>
         <ol className="py-1">
@@ -49,7 +49,7 @@ export default function PopularPostsWidget() {
             <li key={post.id}>
               <Link
                 href={`/community/${post.id}`}
-                className="flex items-start gap-2 px-3 py-2 hover:bg-slate-50 transition-colors duration-150"
+                className="flex items-start gap-2 px-3 py-2 hover:bg-[var(--color-surface-hover)] transition-colors duration-150"
               >
                 <span
                   className={[

@@ -115,7 +115,11 @@ export async function getComments(postId: number): Promise<CommentListResponse> 
     throw new Error((res as { success: false; error: { message: string } }).error.message)
   }
 
-  // GET /posts/:postId/comments 도 success 래퍼 없이 { items, total } 반환
+  // GET /posts/:postId/comments 가 { success: true, data: { items, total } } 포맷으로 응답하는 경우 unwrap
+  if ('success' in res && res.success && 'data' in res) {
+    return (res as ApiSuccess<CommentListResponse>).data
+  }
+
   return res as unknown as CommentListResponse
 }
 

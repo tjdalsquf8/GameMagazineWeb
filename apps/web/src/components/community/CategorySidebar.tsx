@@ -22,8 +22,8 @@ export default function CategorySidebar({ currentSlug = 'all', onClose }: Catego
 
   return (
     <aside className="w-[200px] shrink-0">
-      <div className="border border-border rounded-md overflow-hidden bg-white">
-        <div className="px-3 py-2 bg-slate-50 border-b border-border">
+      <div className="border border-[var(--color-border)] rounded-md overflow-hidden bg-[var(--color-background)]">
+        <div className="px-3 py-2 bg-[var(--color-surface)] border-b border-[var(--color-border)]">
           <span className="text-sm font-semibold text-text-primary">카테고리</span>
         </div>
 
@@ -34,8 +34,8 @@ export default function CategorySidebar({ currentSlug = 'all', onClose }: Catego
             onClick={onClose}
             className={`flex items-center px-3 py-2 text-sm transition-colors ${
               currentSlug === 'all'
-                ? 'font-bold bg-slate-100'
-                : 'text-text-secondary hover:bg-slate-50'
+                ? 'font-bold bg-[var(--color-surface)]'
+                : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]'
             }`}
           >
             전체
@@ -49,7 +49,7 @@ export default function CategorySidebar({ currentSlug = 'all', onClose }: Catego
               <div key={parent.id} className="flex flex-col">
                 {/* 대분류 클릭 영역 */}
                 <div
-                  className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-slate-50 group"
+                  className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-[var(--color-surface-hover)] group"
                   onClick={() => toggleCategory(parent.id)}
                 >
                   <Link
@@ -80,7 +80,7 @@ export default function CategorySidebar({ currentSlug = 'all', onClose }: Catego
                       className={`flex items-center pl-6 pr-3 py-1.5 text-sm transition-colors ${
                         currentSlug === child.slug
                           ? 'font-bold text-blue-600'
-                          : 'text-text-muted hover:text-text-secondary hover:bg-slate-50'
+                          : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-hover)]'
                       }`}
                     >
                       {child.name}

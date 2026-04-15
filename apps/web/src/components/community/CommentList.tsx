@@ -27,8 +27,8 @@ export default function CommentList({ postId }: CommentListProps) {
     setError(null)
     try {
       const res = await getComments(postId)
-      setComments(res.items)
-      setTotal(res.total)
+      setComments(res.items ?? [])
+      setTotal(res.total ?? 0)
     } catch (err) {
       setError(err instanceof Error ? err.message : '댓글을 불러오는데 실패했습니다')
     } finally {
