@@ -14,6 +14,7 @@ import PostListItem from '@/components/community/PostListItem'
 import PostListSkeleton from '@/components/community/PostListSkeleton'
 import Pagination from '@/components/community/Pagination'
 import SearchBar from '@/components/community/SearchBar'
+import MobileCategoryBar from '@/components/community/MobileCategoryBar'
 import type { Post } from '@/types/community'
 
 const PAGE_SIZE = 10
@@ -142,6 +143,9 @@ export default function PostList() {
           </>
         )}
       </nav>
+
+      {/* 모바일 전용 카테고리 탭바 */}
+      <MobileCategoryBar currentSlug={categorySlug} />
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between mb-3">
         <div className="flex items-center gap-2">
