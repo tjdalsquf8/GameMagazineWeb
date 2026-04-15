@@ -7,6 +7,8 @@ import { usePathname } from 'next/navigation'
 
 interface NavLinksProps {
   variant: 'desktop' | 'mobile'
+  // 모바일 드로어에서 항목 클릭 시 드로어를 닫기 위한 콜백
+  onClose?: () => void
 }
 
 const NAV_ITEMS = [
@@ -15,21 +17,45 @@ const NAV_ITEMS = [
 ]
 
 // 네비게이션 링크 목록 컴포넌트 (데스크탑/모바일 레이아웃 분기)
-export function NavLinks({ variant }: NavLinksProps) {
+export function NavLinks({ variant, onClose }: NavLinksProps) {
   const pathname = usePathname()
-  const containerClass = variant === 'desktop' ? 'flex items-center gap-6' : 'flex flex-col gap-4'
 
+  if (variant === 'desktop') {
+    return (
+      <nav className="flex items-center gap-6">
+        {NAV_ITEMS.map((item) => {
+          const isActive = pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`text-sm transition-colors hover:text-[var(--color-primary)] ${
+                isActive
+                  ? 'text-[var(--color-primary)] font-medium'
+                  : 'text-[var(--color-text-secondary)]'
+              }`}
+            >
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+    )
+  }
+
+  // 모바일: 전체 너비, 최소 48px 터치 타겟, 활성화 강조
   return (
-    <nav className={containerClass}>
+    <nav className="flex flex-col">
       {NAV_ITEMS.map((item) => {
         const isActive = pathname.startsWith(item.href)
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={`text-sm transition-colors hover:text-[var(--color-primary)] ${
+            onClick={onClose}
+            className={`flex items-center min-h-[48px] px-2 text-sm font-medium transition-colors hover:text-[var(--color-primary)] ${
               isActive
-                ? 'text-[var(--color-primary)] font-medium'
+                ? 'text-[var(--color-primary)]'
                 : 'text-[var(--color-text-secondary)]'
             }`}
           >
