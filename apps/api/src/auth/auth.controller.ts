@@ -4,7 +4,6 @@ import {
   Body,
   Res,
   Req,
-  UseGuards,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common'
@@ -18,7 +17,6 @@ import { LoginDto } from './dto/login.dto'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { VerifyResetTokenDto } from './dto/verify-reset-token.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
-import { JwtAuthGuard } from './guards/jwt-auth.guard'
 import { ConfigService } from '@nestjs/config'
 
 @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -62,6 +60,8 @@ export class AuthController {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProd,
+      // TODO: 배포 시 'lax'로 변경 필요 — Vercel(FE) ↔ AWS EC2(BE) 크로스 도메인 환경에서는
+      // sameSite: 'strict'이면 쿠키가 전달되지 않음
       sameSite: 'strict',
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30일
       path: '/',
@@ -71,11 +71,11 @@ export class AuthController {
   }
 
   @Post('logout')
-  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('refreshToken', {
       httpOnly: true,
+      // TODO: 배포 시 'lax'로 변경 필요 — login 쿠키 설정과 동일하게 맞춰야 함
       sameSite: 'strict',
       path: '/',
     })

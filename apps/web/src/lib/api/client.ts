@@ -1,4 +1,4 @@
-// API 클라이언트 — 모든 HTTP 요청의 단일 진입점. 401 인터셉터 포함.
+// API 클라이언트 — 모든 HTTP 요청의 단일 진입점. 401 인터셉터 + refresh 자동 재발급 포함.
 import type { ApiResponse } from '@/types'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
@@ -12,36 +12,84 @@ interface RequestOptions {
   token?: string
 }
 
+// refresh 토큰으로 새 accessToken 발급 — apiClient를 거치지 않아 순환 호출 방지
+async function refreshAccessToken(): Promise<string | null> {
+  try {
+    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+    })
+    if (!res.ok) return null
+    const json = await res.json() as ApiResponse<{ accessToken: string }>
+    if (!json.success) return null
+    return json.data.accessToken ?? null
+  } catch {
+    return null
+  }
+}
+
+// 인증 만료 처리 — 토스트 + 스토어 초기화 + 로그인 페이지 이동
+function handleAuthExpired(): void {
+  useToastStore.getState().showToast('로그인이 만료되었습니다. 다시 로그인해주세요.', 'error')
+  useAuthStore.getState().clearAuth()
+  window.location.href = '/login'
+}
+
 async function request<T>(
   method: HttpMethod,
   path: string,
   body?: unknown,
   options?: RequestOptions
 ): Promise<ApiResponse<T>> {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...options?.headers,
+  const buildHeaders = (token: string | null): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    }
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    return headers
   }
+
+  const serializedBody = body !== undefined ? JSON.stringify(body) : undefined
 
   // 명시적 token 우선, 없으면 authStore에서 자동으로 읽음
   const token = options?.token ?? useAuthStore.getState().accessToken
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
 
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
-    headers,
+    headers: buildHeaders(token),
     credentials: 'include', // HttpOnly 쿠키 전송을 위해 필요
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: serializedBody,
   })
 
-  // 401 인터셉터 — 인증 만료 시 토스트 알림 후 로그인 페이지로 redirect
+  // 401 인터셉터 — refresh 시도 후 재요청, 실패 시 로그아웃
   if (res.status === 401) {
-    useToastStore.getState().showToast('로그인이 만료되었습니다. 다시 로그인해주세요.', 'error')
-    useAuthStore.getState().clearAuth()
-    window.location.href = '/login'
-    throw new Error('UNAUTHORIZED')
+    // refresh 엔드포인트 자체가 401이면 재시도 없이 로그아웃 처리
+    if (path === '/api/auth/refresh') {
+      handleAuthExpired()
+      throw new Error('UNAUTHORIZED')
+    }
+
+    const newToken = await refreshAccessToken()
+
+    if (!newToken) {
+      handleAuthExpired()
+      throw new Error('UNAUTHORIZED')
+    }
+
+    // 새 accessToken을 스토어에 저장
+    useAuthStore.setState({ accessToken: newToken })
+
+    // 원래 요청 재시도
+    const retryRes = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers: buildHeaders(newToken),
+      credentials: 'include',
+      body: serializedBody,
+    })
+
+    const retryJson = await retryRes.json()
+    return retryJson as ApiResponse<T>
   }
 
   const json = await res.json()
