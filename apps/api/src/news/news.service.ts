@@ -12,7 +12,7 @@ import {
 } from './pipeline/category-classifier'
 import { rewriteArticle } from './pipeline/article-rewriter'
 import { NewsListQueryDto } from './dto/news-list-query.dto'
-import { NewsListItemDto, NewsDetailDto } from './dto/news-response.dto'
+import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto } from './dto/news-response.dto'
 
 // 파이프라인 실행 결과 통계 타입
 interface PipelineResult {
@@ -160,6 +160,7 @@ export class NewsService {
           rewrittenTitle: true,
           rewrittenSummary: true,
           tags: true,
+          viewCount: true,
           createdAt: true,
         },
       }),
@@ -172,6 +173,7 @@ export class NewsService {
       title: item.rewrittenTitle,
       summary: item.rewrittenSummary,
       tags: item.tags,
+      viewCount: item.viewCount,
       createdAt: item.createdAt,
     }))
 
@@ -179,6 +181,42 @@ export class NewsService {
       data,
       meta: { total, page, limit },
     }
+  }
+
+  // 좋아요 수 및 내 좋아요 여부 조회 — userId 없으면 liked: false 반환
+  async getRecommend(
+    newsId: string,
+    userId: string | null,
+  ): Promise<{ liked: boolean; count: number }> {
+    const count = await this.prisma.newsRecommend.count({ where: { newsId } })
+    if (!userId) return { liked: false, count }
+    const existing = await this.prisma.newsRecommend.findUnique({
+      where: { userId_newsId: { userId, newsId } },
+    })
+    return { liked: !!existing, count }
+  }
+
+  // 좋아요 토글 — 레코드가 있으면 삭제(취소), 없으면 생성(추천)
+  async toggleRecommend(
+    newsId: string,
+    userId: string,
+  ): Promise<{ liked: boolean; count: number }> {
+    const existing = await this.prisma.newsRecommend.findUnique({
+      where: { userId_newsId: { userId, newsId } },
+    })
+
+    if (existing) {
+      await this.prisma.newsRecommend.delete({
+        where: { userId_newsId: { userId, newsId } },
+      })
+    } else {
+      await this.prisma.newsRecommend.create({
+        data: { userId, newsId },
+      })
+    }
+
+    const count = await this.prisma.newsRecommend.count({ where: { newsId } })
+    return { liked: !existing, count }
   }
 
   // 뉴스 상세 조회 — id로 단일 뉴스 조회
@@ -193,6 +231,7 @@ export class NewsService {
         rewrittenSummary: true,
         rewrittenBody: true,
         tags: true,
+        viewCount: true,
         createdAt: true,
       },
     })
@@ -209,7 +248,34 @@ export class NewsService {
       summary: news.rewrittenSummary,
       body: news.rewrittenBody,
       tags: news.tags,
+      viewCount: news.viewCount,
       createdAt: news.createdAt,
     }
+  }
+
+  // 카테고리별 조회수 상위 뉴스 조회 — 사이드바 인기 뉴스 표시용
+  async getPopularNews(mainCategory: string, limit: number): Promise<PopularNewsItemDto[]> {
+    const items = await this.prisma.news.findMany({
+      where: {
+        status: 'PUBLISHED',
+        ...(mainCategory ? { mainCategory } : {}),
+      },
+      orderBy: { viewCount: 'desc' },
+      take: limit,
+      select: { id: true, rewrittenTitle: true, viewCount: true },
+    })
+    return items.map((item) => ({
+      id: item.id,
+      title: item.rewrittenTitle,
+      viewCount: item.viewCount,
+    }))
+  }
+
+  // 뉴스 조회수 증가 — 클라이언트 localStorage 하루 1회 제한과 연동
+  async incrementView(id: string): Promise<void> {
+    await this.prisma.news.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+    })
   }
 }

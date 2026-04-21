@@ -231,6 +231,9 @@ model News {
   rewrittenBody     String    @db.Text @map("rewritten_body")
   tags              String[]
 
+  // 조회수
+  viewCount         Int        @default(0) @map("view_count")
+
   // 상태
   status            NewsStatus @default(PUBLISHED)
 
