@@ -64,7 +64,7 @@ export function NewsCard({ news }: NewsCardProps) {
           {news.title}
         </h3>
 
-        {/* 메타 정보 — 소분류 + 발행일 */}
+        {/* 메타 정보 — 소분류 + 발행일 + 조회수 */}
         <div className="flex items-center gap-2 mt-2 text-xs text-[var(--color-text-muted)]">
           {news.subCategory && (
             <>
@@ -73,6 +73,8 @@ export function NewsCard({ news }: NewsCardProps) {
             </>
           )}
           <span>{formatDate(news.createdAt)}</span>
+          <span>·</span>
+          <span>조회 {news.viewCount.toLocaleString()}</span>
         </div>
       </div>
     </Link>

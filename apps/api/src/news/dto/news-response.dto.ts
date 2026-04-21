@@ -9,6 +9,7 @@ export class NewsListItemDto {
   title!: string       // rewrittenTitle
   summary!: string     // rewrittenSummary
   tags!: string[]
+  viewCount!: number
   createdAt!: Date
 }
 
@@ -21,5 +22,13 @@ export class NewsDetailDto {
   summary!: string
   body!: string        // rewrittenBody
   tags!: string[]
+  viewCount!: number
   createdAt!: Date
+}
+
+// 사이드바용 인기 뉴스 아이템 형태
+export class PopularNewsItemDto {
+  id!: string
+  title!: string
+  viewCount!: number
 }

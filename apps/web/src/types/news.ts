@@ -7,6 +7,7 @@ export interface NewsArticle {
   mainCategory: string
   subCategory: string
   title: string
+  viewCount: number
   createdAt: string
 }
 
@@ -21,4 +22,17 @@ export interface NewsMeta {
 export interface NewsListResponse {
   data: NewsArticle[]
   meta: NewsMeta
+}
+
+// 뉴스 상세 아이템 — API GET /news/:id 응답의 data 필드
+export interface NewsDetail {
+  id: string
+  mainCategory: string
+  subCategory: string
+  title: string
+  summary: string
+  body: string
+  tags: string[]
+  viewCount: number
+  createdAt: string
 }
