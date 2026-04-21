@@ -18,3 +18,8 @@
 토큰 만료(1시간) 후 silent refresh 시 새 accessToken으로 쿠키도  
  갱신하는 로직이 필요합니다. refresh 구현 시
 setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
+
+1. 뉴스 썸네일 어떻게 가져올지 (후순위)
+2. 뉴스 상세 페이지 디자인
+3. 뉴스 조회수, 추천수 연결
+4. 관리자 대시보드 생성

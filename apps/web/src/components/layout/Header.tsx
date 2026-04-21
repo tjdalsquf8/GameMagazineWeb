@@ -58,7 +58,9 @@ export function Header() {
       {/* 모바일 드로어 메뉴 */}
       <div
         className={`md:hidden fixed left-0 right-0 top-16 z-50 bg-[var(--color-background)] border-b border-[var(--color-border)] px-4 py-2 flex flex-col transition-all duration-200 ease-in-out overflow-hidden ${
-          isDrawerOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
+          isDrawerOpen
+            ? 'opacity-100 translate-y-0 pointer-events-auto'
+            : 'opacity-0 -translate-y-2 pointer-events-none'
         }`}
       >
         {/* 네비게이션 링크 */}

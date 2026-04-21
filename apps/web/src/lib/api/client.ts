@@ -20,7 +20,7 @@ async function refreshAccessToken(): Promise<string | null> {
       credentials: 'include',
     })
     if (!res.ok) return null
-    const json = await res.json() as ApiResponse<{ accessToken: string }>
+    const json = (await res.json()) as ApiResponse<{ accessToken: string }>
     if (!json.success) return null
     return json.data.accessToken ?? null
   } catch {

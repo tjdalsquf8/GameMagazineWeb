@@ -53,11 +53,7 @@ export function NavLinks({ variant, onClose }: NavLinksProps) {
             key={item.href}
             href={item.href}
             onClick={onClose}
-            className={`flex items-center min-h-[48px] px-2 text-sm font-medium transition-colors hover:text-[var(--color-primary)] ${
-              isActive
-                ? 'text-[var(--color-primary)]'
-                : 'text-[var(--color-text-secondary)]'
-            }`}
+            className={`flex items-center min-h-[48px] px-2 text-sm font-medium transition-colors hover:text-[var(--color-primary)] ${isActive ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-secondary)]'}`}
           >
             {item.label}
           </Link>
