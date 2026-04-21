@@ -20,6 +20,11 @@ enum Role {
   ADMIN
 }
 
+enum NewsStatus {
+  PUBLISHED
+  HIDDEN
+}
+
 enum Provider {
   EMAIL
   GOOGLE
@@ -45,6 +50,7 @@ model User {
   postLikes         PostLike[]
   postRecommends    PostRecommend[]
   commentRecommends CommentRecommend[]
+  newsRecommends    NewsRecommend[]
 
   @@map("users")
 }
@@ -202,45 +208,59 @@ model CommentRecommend {
 }
 
 // ============================
-// 뉴스 카테고리 (커뮤니티와 완전 분리)
-// ============================
-
-model NewsCategory {
-  id       Int    @id @default(autoincrement())
-  name     String @unique
-  slug     String @unique
-  parentId Int?   @map("parent_id")
-
-  parent   NewsCategory?  @relation("NewsCategoryChildren", fields: [parentId], references: [id])
-  children NewsCategory[] @relation("NewsCategoryChildren")
-  news     News[]
-
-  @@index([parentId])
-  @@map("news_categories")
-}
-
-// ============================
-// 뉴스 (커뮤니티와 완전 분리)
+// 뉴스 (자동 수집·재작성 파이프라인)
 // ============================
 
 model News {
-  id             Int       @id @default(autoincrement())
-  title          String    @db.VarChar(255)
-  content        String    @db.Text
-  thumbnail      String?
-  slug           String    @unique
-  newsCategoryId Int       @map("news_category_id")
-  viewCount      Int       @default(0) @map("view_count")
-  isPublished    Boolean   @default(false) @map("is_published")
-  publishedAt    DateTime? @map("published_at")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
+  id                String    @id @default(cuid())
 
-  newsCategory NewsCategory @relation(fields: [newsCategoryId], references: [id])
+  // 원문 정보
+  originalTitle     String    @map("original_title")
+  originalLink      String    @unique @map("original_link")
+  originalPubDate   DateTime? @map("original_pub_date")
+  sourceName        String    @map("source_name")
 
-  @@index([slug])
-  @@index([newsCategoryId])
-  @@index([publishedAt(sort: Desc)])
+  // 카테고리
+  mainCategory      String    @map("main_category")
+  subCategory       String    @map("sub_category")
+  classifyMethod    String    @map("classify_method") // "keyword" | "claude"
+
+  // 재작성 결과
+  rewrittenTitle    String    @map("rewritten_title")
+  rewrittenSummary  String    @map("rewritten_summary")
+  rewrittenBody     String    @db.Text @map("rewritten_body")
+  tags              String[]
+
+  // 상태
+  status            NewsStatus @default(PUBLISHED)
+
+  // 타임스탬프
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  recommends        NewsRecommend[]
+
+  @@index([mainCategory, createdAt(sort: Desc)])
+  @@index([subCategory, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
   @@map("news")
+}
+
+// ============================
+// 뉴스 추천
+// ============================
+
+model NewsRecommend {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now()) @map("created_at")
+
+  userId    String   @map("user_id")
+  newsId    String   @map("news_id")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  news      News     @relation(fields: [newsId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, newsId])
+  @@index([newsId])
+  @@map("news_recommends")
 }

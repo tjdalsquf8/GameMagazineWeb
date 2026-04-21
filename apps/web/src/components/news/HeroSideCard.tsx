@@ -41,17 +41,26 @@ function RankBadge({ rank, isAllCategory }: { rank: number; isAllCategory: boole
     3: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300',
     4: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400',
   }
-  const colorClass = rankColors[rank] ?? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
+  const colorClass =
+    rankColors[rank] ?? 'bg-zinc-100 text-zinc-500 dark:bg-zinc-700 dark:text-zinc-400'
 
   return (
-    <span className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold flex-shrink-0 ${colorClass}`}>
+    <span
+      className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold flex-shrink-0 ${colorClass}`}
+    >
       {rank}
     </span>
   )
 }
 
 // Hero 사이드카드 컴포넌트
-export function HeroSideCard({ news, activeSlug, onClick, rank, isAllCategory }: HeroSideCardProps) {
+export function HeroSideCard({
+  news,
+  activeSlug,
+  onClick,
+  rank,
+  isAllCategory,
+}: HeroSideCardProps) {
   const isActive = news.slug === activeSlug
 
   return (

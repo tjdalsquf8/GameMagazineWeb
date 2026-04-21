@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import PostList from '@/components/community/PostList'
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 }
 
 export default function CommunityPage() {
-  return <PostList />
+  return (
+    <Suspense>
+      <PostList />
+    </Suspense>
+  )
 }

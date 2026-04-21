@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import WriteForm from '@/components/community/WriteForm'
 
@@ -6,5 +7,9 @@ export const metadata: Metadata = {
 }
 
 export default function WritePage() {
-  return <WriteForm />
+  return (
+    <Suspense>
+      <WriteForm />
+    </Suspense>
+  )
 }
