@@ -21,7 +21,7 @@ export function NewsGrid({ news }: NewsGridProps) {
 
       {/* 뉴스 그리드 */}
       {news.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           {news.map((item) => (
             <NewsCard key={item.id} news={item} />
           ))}
