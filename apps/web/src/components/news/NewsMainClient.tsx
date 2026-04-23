@@ -155,8 +155,10 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
             </div>
           </div>
 
-          {/* 커뮤니티 HOT */}
-          <CommunityHotWidget posts={communityHot} />
+          {/* 커뮤니티 HOT — 모바일에서 숨김 */}
+          <div className="hidden md:block">
+            <CommunityHotWidget posts={communityHot} />
+          </div>
         </div>
       </section>
     </div>

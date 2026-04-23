@@ -44,7 +44,7 @@ export function NewsCard({ news }: NewsCardProps) {
           alt={news.title}
           fill
           className="object-cover transition-transform duration-300 group-hover:scale-105"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 25vw"
           onError={(e) => {
             // placeholder 이미지 로드 실패 시 빈 배경 유지
             ;(e.currentTarget as HTMLImageElement).style.display = 'none'
@@ -53,19 +53,19 @@ export function NewsCard({ news }: NewsCardProps) {
       </div>
 
       {/* 카드 본문 */}
-      <div className="p-3">
+      <div className="p-2 sm:p-3">
         {/* 카테고리 뱃지 */}
-        <div className="mb-2">
+        <div className="mb-1 sm:mb-2">
           <CategoryBadge category={category} />
         </div>
 
         {/* 제목 */}
-        <h3 className="text-sm font-medium text-[var(--color-text-primary)] line-clamp-2 leading-snug group-hover:text-[var(--color-primary)] transition-colors">
+        <h3 className="text-xs sm:text-sm font-medium text-[var(--color-text-primary)] line-clamp-2 leading-snug group-hover:text-[var(--color-primary)] transition-colors">
           {news.title}
         </h3>
 
         {/* 메타 정보 — 소분류 + 발행일 + 조회수 */}
-        <div className="flex items-center gap-2 mt-2 text-xs text-[var(--color-text-muted)]">
+        <div className="flex items-center gap-1 sm:gap-2 mt-1 sm:mt-2 text-xs text-[var(--color-text-muted)]">
           {news.subCategory && (
             <>
               <span>{news.subCategory}</span>
