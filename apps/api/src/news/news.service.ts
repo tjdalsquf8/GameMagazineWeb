@@ -10,7 +10,11 @@ import {
   classifyByKeyword,
   classifyWithClaude,
 } from './pipeline/category-classifier'
-import { rewriteArticle } from './pipeline/article-rewriter'
+import { rewriteArticle, rewriteConsoleArticle, rewriteEsportsArticle } from './pipeline/article-rewriter'
+import {
+  fetchCompletedLckMatches,
+  buildMatchContext,
+} from './pipeline/esports-collector'
 import { NewsListQueryDto } from './dto/news-list-query.dto'
 import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto } from './dto/news-response.dto'
 
@@ -71,26 +75,47 @@ export class NewsService {
             continue
           }
 
-          // 1단계: 키워드 분류
-          let classification = classifyByKeyword(article.title)
+          let rewritten
+          let classifyMethod: string
+          let mainCategory: string
+          let subCategory: string
 
-          // 2단계: 키워드 분류 실패 시 Claude 분류
-          if (!classification) {
-            const claudeResults = await classifyWithClaude(
-              [article.title],
+          if (source.platform) {
+            // Console 소스 — 카테고리 분류 생략, 플랫폼으로 고정, 영문 → 한국어 재작성
+            mainCategory = 'Console'
+            subCategory = source.platform
+            classifyMethod = 'fixed'
+            rewritten = await rewriteConsoleArticle(
+              article.title,
+              article.content,
+              source.platform,
               this.anthropic,
             )
-            classification = claudeResults[0]
-          }
+          } else {
+            // 일반 소스 — 1단계: 키워드 분류
+            let classification = classifyByKeyword(article.title)
 
-          // 재작성
-          const rewritten = await rewriteArticle(
-            article.title,
-            article.content,
-            classification.mainCategory,
-            classification.subCategory,
-            this.anthropic,
-          )
+            // 2단계: 키워드 분류 실패 시 Claude 분류
+            if (!classification) {
+              const claudeResults = await classifyWithClaude(
+                [article.title],
+                this.anthropic,
+              )
+              classification = claudeResults[0]
+            }
+
+            mainCategory = classification.mainCategory
+            subCategory = classification.subCategory
+            classifyMethod = classification.method
+
+            rewritten = await rewriteArticle(
+              article.title,
+              article.content,
+              classification.mainCategory,
+              classification.subCategory,
+              this.anthropic,
+            )
+          }
 
           // DB 저장
           await this.prisma.news.create({
@@ -99,13 +124,14 @@ export class NewsService {
               originalLink: article.link,
               originalPubDate: article.pubDate,
               sourceName: article.sourceName,
-              mainCategory: classification.mainCategory,
-              subCategory: classification.subCategory,
-              classifyMethod: classification.method,
+              mainCategory,
+              subCategory,
+              classifyMethod,
               rewrittenTitle: rewritten.title,
               rewrittenSummary: rewritten.summary,
               rewrittenBody: rewritten.body,
               tags: rewritten.tags,
+              status: 'PUBLISHED',
             },
           })
 
@@ -128,7 +154,75 @@ export class NewsService {
       `파이프라인 완료 — saved: ${result.saved}, skipped: ${result.skipped}, failed: ${result.failed}`,
     )
 
+    // 이스포츠 파이프라인 연속 실행
+    await this.runEsportsPipeline()
+
     return result
+  }
+
+  // LCK 이스포츠 파이프라인 실행 — 완료된 경기 수집 → 중복 체크 → 기사 재작성 → 저장
+  async runEsportsPipeline(): Promise<void> {
+    this.logger.log('[Esports] LCK 파이프라인 시작')
+
+    let matches
+    try {
+      matches = await fetchCompletedLckMatches()
+      this.logger.log(`[Esports] ${matches.length}개 완료 경기 수집`)
+    } catch (err) {
+      this.logger.error(
+        '[Esports] 경기 수집 실패',
+        err instanceof Error ? err.stack : String(err),
+      )
+      return
+    }
+
+    for (const match of matches) {
+      const originalLink = `lck-match-${match.matchId}`
+      try {
+        // 중복 체크 — originalLink 기준
+        const existing = await this.prisma.news.findUnique({
+          where: { originalLink },
+        })
+
+        if (existing) {
+          continue
+        }
+
+        // 경기 컨텍스트 생성 → 기사 재작성
+        const matchContext = buildMatchContext(match)
+        const rewritten = await rewriteEsportsArticle(matchContext, this.anthropic)
+
+        // DB 저장
+        await this.prisma.news.create({
+          data: {
+            originalTitle: rewritten.title,
+            originalLink,
+            originalPubDate: new Date(match.startTime),
+            sourceName: 'lolesports',
+            mainCategory: 'Esports',
+            subCategory: 'LCK',
+            classifyMethod: 'fixed',
+            rewrittenTitle: rewritten.title,
+            rewrittenSummary: rewritten.summary,
+            rewrittenBody: rewritten.body,
+            tags: rewritten.tags,
+            status: 'PUBLISHED',
+          },
+        })
+
+        this.logger.log(`[Esports] 저장 완료: ${rewritten.title}`)
+
+        // API 레이트 리밋 방지용 딜레이
+        await new Promise((resolve) => setTimeout(resolve, 500))
+      } catch (err) {
+        this.logger.error(
+          `[Esports] 경기 처리 실패: matchId=${match.matchId}`,
+          err instanceof Error ? err.stack : String(err),
+        )
+      }
+    }
+
+    this.logger.log('[Esports] LCK 파이프라인 완료')
   }
 
   // 뉴스 목록 조회 — 카테고리 필터 및 페이지네이션 지원

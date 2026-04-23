@@ -11,8 +11,8 @@ import { CategoryBadge } from './CategoryBadge'
 // 자동 순환 인디케이터용 카테고리 순서 및 레이블
 const AUTO_SLIDE_LABELS: { slug: CategorySlug; label: string }[] = [
   { slug: 'pc', label: 'PC' },
-  { slug: 'console', label: '콘솔' },
   { slug: 'mobile', label: '모바일' },
+  { slug: 'console', label: '콘솔' },
   { slug: 'esports', label: 'e스포츠' },
 ]
 

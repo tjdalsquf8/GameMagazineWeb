@@ -21,7 +21,7 @@ export type MobileSubSlug =
   | 'cookierun'
   | 'solo-leveling'
   | 'mobile-etc'
-export type ConsoleSubSlug = 'eldenring' | 'ff' | 'gta' | 'zelda' | 'console-etc'
+export type ConsoleSubSlug = 'playstation' | 'xbox' | 'nintendo' | 'console-etc'
 export type EsportsSubSlug = 'lck' | 'vct' | 'owl' | 'esports-etc'
 export type SubCategorySlug = PCSubSlug | MobileSubSlug | ConsoleSubSlug | EsportsSubSlug
 
@@ -114,11 +114,10 @@ export const mockSubCategories: Record<Exclude<CategorySlug, 'all'>, SubCategory
     { id: 26, name: '기타 모바일', slug: 'mobile-etc' },
   ],
   console: [
-    { id: 31, name: '엘든링', slug: 'eldenring' },
-    { id: 32, name: '파이널판타지', slug: 'ff' },
-    { id: 33, name: 'GTA', slug: 'gta' },
-    { id: 34, name: '젤다', slug: 'zelda' },
-    { id: 35, name: '기타 콘솔', slug: 'console-etc' },
+    { id: 31, name: 'PlayStation', slug: 'playstation' },
+    { id: 32, name: 'Xbox', slug: 'xbox' },
+    { id: 33, name: 'Nintendo', slug: 'nintendo' },
+    { id: 34, name: '기타 콘솔', slug: 'console-etc' },
   ],
   esports: [
     { id: 41, name: 'LCK', slug: 'lck' },
@@ -498,7 +497,7 @@ export const mockLatestNews: LatestNews[] = [
     title: '젤다의 전설 왕국의 눈물 DLC 공식 발표',
     thumbnail: 'https://picsum.photos/seed/con5/400/225',
     category: { id: 2, name: '콘솔', slug: 'console' },
-    subCategory: { id: 34, name: '젤다', slug: 'zelda' },
+    subCategory: { id: 33, name: 'Nintendo', slug: 'nintendo' },
     viewCount: 12000,
     readTime: 3,
     publishedAt: '2026-04-04T00:00:00.000Z',

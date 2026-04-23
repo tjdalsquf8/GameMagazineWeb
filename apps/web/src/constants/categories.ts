@@ -5,8 +5,8 @@
 export const MAIN_CATEGORIES = [
   { label: '전체', apiValue: '' },
   { label: 'PC', apiValue: 'PC' },
-  { label: '콘솔', apiValue: 'Console' },
   { label: '모바일', apiValue: 'Mobile' },
+  { label: '콘솔', apiValue: 'Console' },
   { label: 'Esports', apiValue: 'Esports' },
 ] as const
 
@@ -27,7 +27,6 @@ export const SUB_CATEGORIES: Record<string, string[]> = {
     '붉은사막',
     '기타 PC',
   ],
-  Console: ['파이널판타지', 'GTA', '젤다', '몬스터헌터', '붉은사막', '기타 콘솔'],
   Mobile: [
     '원신',
     '붕괴: 스타레일',
@@ -39,5 +38,6 @@ export const SUB_CATEGORIES: Record<string, string[]> = {
     '승리의 여신: 니케',
     '기타 모바일',
   ],
+  Console: ['PlayStation', 'Xbox', 'Nintendo', '기타 콘솔'],
   Esports: ['LCK', 'VCT', '기타 Esports'],
 }

@@ -1,6 +1,5 @@
 // 최신 뉴스 그리드 컴포넌트 — API에서 받은 뉴스 목록을 4열 그리드로 표시
 // 필터링은 API 파라미터로 서버에서 처리되므로 클라이언트 필터링 없음
-import Link from 'next/link'
 import type { NewsArticle } from '@/types/news'
 import { NewsCard } from './NewsCard'
 
@@ -18,13 +17,6 @@ export function NewsGrid({ news }: NewsGridProps) {
           <span className="w-[3px] h-5 bg-[var(--color-primary)] rounded-full inline-block" />
           최신 뉴스
         </h2>
-        {/* 더보기 버튼 (추후 구현 예정) */}
-        <Link
-          href="/news"
-          className="text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
-        >
-          더보기 &rarr;
-        </Link>
       </div>
 
       {/* 뉴스 그리드 */}

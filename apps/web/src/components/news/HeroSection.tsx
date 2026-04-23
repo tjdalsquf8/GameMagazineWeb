@@ -8,7 +8,7 @@ import { HeroMain } from './HeroMain'
 import { HeroSideCard } from './HeroSideCard'
 
 // 자동 순환 카테고리 순서
-const AUTO_SLIDE_ORDER: CategorySlug[] = ['pc', 'console', 'mobile', 'esports']
+const AUTO_SLIDE_ORDER: CategorySlug[] = ['pc', 'mobile', 'console', 'esports']
 
 interface HeroSectionProps {
   activeCategory: CategorySlug

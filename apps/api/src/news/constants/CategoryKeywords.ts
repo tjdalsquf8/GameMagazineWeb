@@ -100,25 +100,16 @@ export const SUB_CATEGORIES: Record<MainCategory, SubCategory[]> = {
   // ── Console ──────────────────────────────────
   Console: [
     {
-      name: "파이널판타지",
-      keywords: ["파이널판타지", "final fantasy", "ff7", "ff14", "ff16"],
+      name: "PlayStation",
+      keywords: ["플레이스테이션", "playstation", "ps5", "ps4", "소니", "sony"],
     },
     {
-      name: "GTA",
-      keywords: ["gta6", "gta 6", "grand theft auto"],
+      name: "Xbox",
+      keywords: ["엑스박스", "xbox", "마이크로소프트", "microsoft", "게임패스", "game pass"],
     },
     {
-      name: "젤다",
-      keywords: ["젤다", "zelda"],
-    },
-    {
-      name: "몬스터헌터",
-      keywords: ["몬스터헌터", "monster hunter"],
-    },
-    {
-      name: "붉은사막",
-      keywords: ["붉은사막"],
-      exclude: ["pc", "PC", "스팀"], // PC 버전 기사는 PC 카테고리에서 처리
+      name: "Nintendo",
+      keywords: ["닌텐도", "nintendo", "스위치", "switch", "ns2"],
     },
   ],
 
@@ -177,13 +168,6 @@ export const CATEGORY_TREE: Record<MainCategory, string[]> = {
     "승리의 여신: 니케",
     "기타 모바일",
   ],
-  Console: [
-    "파이널판타지",
-    "GTA",
-    "젤다",
-    "몬스터헌터",
-    "붉은사막",
-    "기타 콘솔",
-  ],
+  Console: ["PlayStation", "Xbox", "Nintendo", "기타 콘솔"],
   Esports: ["LCK", "VCT", "기타 Esports"],
 };
