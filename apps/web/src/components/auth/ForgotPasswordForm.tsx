@@ -159,7 +159,7 @@ export default function ForgotPasswordForm() {
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-surface rounded-2xl p-8 shadow-sm border border-border">
+      <div className="pt-2 pb-8">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-text-primary mb-1">비밀번호 찾기</h1>
           <p className="text-sm text-text-muted">

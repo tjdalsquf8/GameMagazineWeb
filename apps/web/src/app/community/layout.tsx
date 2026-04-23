@@ -8,7 +8,7 @@ interface CommunityLayoutProps {
 
 export default function CommunityLayout({ children }: CommunityLayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       {/* 본문 */}
       <div className="max-w-[1280px] mx-auto px-4 py-6">
         <div className="flex gap-5">

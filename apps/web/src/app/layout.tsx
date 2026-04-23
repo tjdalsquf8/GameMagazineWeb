@@ -35,9 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
       </head>
-      <body className={pretendard.className}>
+      <body className={`${pretendard.className} flex flex-col min-h-screen`}>
         <Header />
-        <main>{children}</main>
+        <main className="flex-1">{children}</main>
         <Footer />
         <ToastContainer />
       </body>

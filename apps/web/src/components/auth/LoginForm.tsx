@@ -66,8 +66,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <div className="bg-surface rounded-2xl p-8 shadow-sm border border-border">
+    <div className="pt-2 pb-8">
         <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-text-primary mb-1">로그인</h1>
           <p className="text-sm text-text-muted">Game Magazine에 오신 것을 환영합니다</p>
@@ -148,7 +147,6 @@ export default function LoginForm() {
             회원가입
           </Link>
         </p>
-      </div>
     </div>
   )
 }
