@@ -29,7 +29,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="bg-surface rounded-2xl p-8 shadow-sm border border-border">
+    <div className="pt-2 pb-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-text-primary text-center mb-6">회원가입</h1>
 

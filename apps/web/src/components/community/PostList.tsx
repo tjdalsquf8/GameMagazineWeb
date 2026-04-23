@@ -5,7 +5,7 @@
 // 카테고리 필터, 정렬, 검색(제목), 페이지네이션 기능 포함
 // 검색어는 URL 쿼리 파라미터 ?search=키워드 로 관리
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { getPosts } from '@/lib/api/posts'
@@ -19,6 +19,12 @@ import type { Post } from '@/types/community'
 
 const PAGE_SIZE = 10
 type SortOption = 'latest' | 'popular' | 'comments'
+
+const SORT_LABELS: Record<SortOption, string> = {
+  latest: '최신순',
+  popular: '인기순',
+  comments: '댓글순',
+}
 
 export default function PostList() {
   const router = useRouter()
@@ -117,6 +123,21 @@ export default function PostList() {
 
   const isSearching = (search?.length ?? 0) > 0
 
+  // 정렬 드롭다운 열림 상태
+  const [sortOpen, setSortOpen] = useState(false)
+  const sortRef = useRef<HTMLDivElement>(null)
+
+  // 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (sortRef.current && !sortRef.current.contains(e.target as Node)) {
+        setSortOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   return (
     <div className="flex-1 min-w-0">
       {/* Breadcrumb */}
@@ -159,15 +180,34 @@ export default function PostList() {
         <div className="flex items-center gap-2 flex-wrap">
           {/* 검색바 */}
           <SearchBar onSearch={handleSearch} defaultValue={initialSearch} isLoading={isLoading} />
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortOption)}
-            className="text-sm border border-border rounded px-2 py-1.5 bg-background text-text-secondary focus:outline-none focus:border-primary transition-colors"
-          >
-            <option value="latest">최신순</option>
-            <option value="popular">인기순</option>
-            <option value="comments">댓글순</option>
-          </select>
+          {/* 정렬 커스텀 드롭다운 — 항상 버튼 아래로 열림 */}
+          <div ref={sortRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setSortOpen((v) => !v)}
+              className="text-sm border border-border rounded px-2 py-1.5 bg-background text-text-secondary focus:outline-none focus:border-primary transition-colors flex items-center gap-1"
+            >
+              {SORT_LABELS[sort]}
+              <svg className="w-3 h-3" viewBox="0 0 12 12" fill="currentColor">
+                <path d="M6 8L1 3h10z" />
+              </svg>
+            </button>
+            {sortOpen && (
+              <ul className="absolute left-0 top-full mt-1 z-50 min-w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded shadow-lg">
+                {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
+                  <li key={option}>
+                    <button
+                      type="button"
+                      onClick={() => { setSort(option); setSortOpen(false) }}
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface)] transition-colors ${sort === option ? 'text-[var(--color-primary)] font-medium' : 'text-text-secondary'}`}
+                    >
+                      {SORT_LABELS[option]}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <button
             type="button"
             onClick={handleWrite}
