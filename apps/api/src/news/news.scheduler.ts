@@ -2,7 +2,6 @@
 // 뉴스 파이프라인 자동 실행 스케줄러 — 매일 09:00, 15:00, 21:00 (KST) 실행
 
 import { Injectable, Logger } from "@nestjs/common";
-import { Cron } from "@nestjs/schedule";
 import { NewsService } from "./news.service";
 
 @Injectable()

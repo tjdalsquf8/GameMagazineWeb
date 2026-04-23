@@ -55,10 +55,9 @@ function formatViewCount(count: number): string {
 async function fetchPopularNews(mainCategory: string): Promise<PopularNewsItem[]> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
   try {
-    const res = await fetch(
-      `${baseUrl}/news/popular?mainCategory=${mainCategory}&limit=5`,
-      { next: { revalidate: 600 } },
-    )
+    const res = await fetch(`${baseUrl}/news/popular?mainCategory=${mainCategory}&limit=5`, {
+      next: { revalidate: 600 },
+    })
     if (!res.ok) return []
     const json: PopularNewsApiResponse = await res.json()
     if (!json.success) return []
@@ -74,7 +73,7 @@ async function fetchPopularPosts(categoryId: number): Promise<PopularPostItem[]>
   try {
     const res = await fetch(
       `${baseUrl}/posts?sort=popular&categoryId=${categoryId}&limit=5&page=1`,
-      { next: { revalidate: 600 } },
+      { next: { revalidate: 600 } }
     )
     if (!res.ok) return []
     const json: PostsApiResponse = await res.json()
@@ -111,9 +110,7 @@ export async function Sidebar({ mainCategory }: SidebarProps) {
 
       {/* 많이 본 뉴스 */}
       <section>
-        <h2 className="text-base font-bold mb-3 text-[var(--color-text)]">
-          많이 본 뉴스
-        </h2>
+        <h2 className="text-base font-bold mb-3 text-[var(--color-text)]">많이 본 뉴스</h2>
         {popularNews.length === 0 ? (
           <p className="text-sm text-[var(--color-text-muted)]">아직 데이터가 없습니다</p>
         ) : (
@@ -121,11 +118,7 @@ export async function Sidebar({ mainCategory }: SidebarProps) {
             {popularNews.map((item, index) => (
               <li key={item.id} className="flex gap-3 items-start">
                 <span
-                  className={`text-sm font-bold w-4 shrink-0 ${
-                    index < 3
-                      ? 'text-[var(--color-primary)]'
-                      : 'text-[var(--color-text-muted)]'
-                  }`}
+                  className={`text-sm font-bold w-4 shrink-0 ${index < 3 ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}
                 >
                   {index + 1}
                 </span>
@@ -148,9 +141,7 @@ export async function Sidebar({ mainCategory }: SidebarProps) {
 
       {/* 커뮤니티 인기글 */}
       <section>
-        <h2 className="text-base font-bold mb-3 text-[var(--color-text)]">
-          커뮤니티 인기글
-        </h2>
+        <h2 className="text-base font-bold mb-3 text-[var(--color-text)]">커뮤니티 인기글</h2>
         {popularPosts.length === 0 ? (
           <p className="text-sm text-[var(--color-text-muted)]">아직 데이터가 없습니다</p>
         ) : (
@@ -158,11 +149,7 @@ export async function Sidebar({ mainCategory }: SidebarProps) {
             {popularPosts.map((post, index) => (
               <li key={post.id} className="flex gap-3 items-start">
                 <span
-                  className={`text-sm font-bold w-4 shrink-0 ${
-                    index < 3
-                      ? 'text-[var(--color-primary)]'
-                      : 'text-[var(--color-text-muted)]'
-                  }`}
+                  className={`text-sm font-bold w-4 shrink-0 ${index < 3 ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-muted)]'}`}
                 >
                   {index + 1}
                 </span>

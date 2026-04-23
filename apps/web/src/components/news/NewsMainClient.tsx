@@ -1,5 +1,5 @@
-// 뉴스 메인 클라이언트 컴포넌트 — 대분류/소분류 카테고리 필터 상태를 관리하고
-// HeroSection, NewsGrid, 광고, CommunityHotWidget을 조합하는 최상위 래퍼
+// 뉴스 메인 클라이언트 컴포넌트 — 대분류/소분류 카테고리 필터 및 페이지네이션 상태를 관리하고
+// HeroSection, NewsGrid, Pagination, CommunityHotWidget을 조합하는 최상위 래퍼
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import type { CategorySlug, CommunityHot } from '@/lib/mock/news'
@@ -9,6 +9,7 @@ import { HeroSection } from './HeroSection'
 import { CategoryFilter } from './CategoryFilter'
 import { NewsGrid } from './NewsGrid'
 import { CommunityHotWidget } from './CommunityHotWidget'
+import Pagination from '@/components/ui/Pagination'
 
 interface NewsMainClientProps {
   // SSR로 받은 초기 뉴스 데이터
@@ -16,6 +17,9 @@ interface NewsMainClientProps {
   // 커뮤니티 HOT — mock 유지
   communityHot: CommunityHot[]
 }
+
+// 페이지당 뉴스 표시 개수
+const PAGE_SIZE = 20
 
 // API mainCategory 값 → HeroSection이 사용하는 mock CategorySlug 매핑
 const API_TO_HERO_SLUG: Record<string, CategorySlug> = {
@@ -34,15 +38,21 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null)
   // 표시할 뉴스 목록
   const [news, setNews] = useState<NewsArticle[]>(initialNews.data)
+  // 현재 페이지 번호
+  const [currentPage, setCurrentPage] = useState(1)
+  // 전체 페이지 수
+  const [totalPages, setTotalPages] = useState(
+    Math.ceil((initialNews.meta.total || 0) / PAGE_SIZE) || 1
+  )
   // API 로딩 상태
   const [isLoading, setIsLoading] = useState(false)
 
-  // 카테고리 조건으로 뉴스 fetch — 카테고리 변경 시 호출
+  /** 카테고리·페이지 조건으로 뉴스 fetch — 조건 변경 시 호출 */
   const fetchNews = useCallback(
-    async (mainCategory: MainCategoryValue, subCategory: string | null) => {
+    async (mainCategory: MainCategoryValue, subCategory: string | null, page: number) => {
       setIsLoading(true)
       try {
-        const params = new URLSearchParams({ limit: '20' })
+        const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) })
         if (mainCategory !== '') params.set('mainCategory', mainCategory)
         if (subCategory !== null) params.set('subCategory', subCategory)
 
@@ -55,7 +65,9 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
         }
         const json = await res.json()
         if (json.success && json.data) {
-          setNews((json.data as NewsListResponse).data)
+          const listResponse = json.data as NewsListResponse
+          setNews(listResponse.data)
+          setTotalPages(Math.ceil((listResponse.meta.total || 0) / PAGE_SIZE) || 1)
         } else {
           setNews([])
         }
@@ -68,17 +80,25 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
     []
   )
 
-  // 대분류 변경 시 소분류 초기화 후 API 재조회
+  /** 대분류 변경 시 소분류·페이지 초기화 후 API 재조회 */
   const handleCategoryChange = (value: MainCategoryValue) => {
     setActiveCategory(value)
     setActiveSubCategory(null)
-    fetchNews(value, null)
+    setCurrentPage(1)
+    fetchNews(value, null, 1)
   }
 
-  // 소분류 변경 시 현재 대분류 유지하고 API 재조회
+  /** 소분류 변경 시 현재 대분류 유지하고 페이지 초기화 후 API 재조회 */
   const handleSubCategoryChange = (value: string | null) => {
     setActiveSubCategory(value)
-    fetchNews(activeCategory, value)
+    setCurrentPage(1)
+    fetchNews(activeCategory, value, 1)
+  }
+
+  /** 페이지 변경 시 현재 카테고리 유지하고 API 재조회 */
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    fetchNews(activeCategory, activeSubCategory, page)
   }
 
   // HeroSection에 전달할 mock CategorySlug (Hero는 mock 데이터 사용 유지)
@@ -102,15 +122,24 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
       </div>
 
       {/* 최신 뉴스 그리드 */}
-      <section className="mb-10 md:mb-14">
-        {isLoading ? (
-          <div className="text-center py-12 text-[var(--color-text-muted)]">
-            뉴스를 불러오는 중...
+      <section className="relative mb-4 md:mb-6">
+        {/* 로딩 중 반투명 오버레이 — 기존 뉴스 카드 유지한 채로 스피너 표시 */}
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-[var(--color-background)]/60 backdrop-blur-[2px]">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-border)] border-t-[var(--color-primary)]" />
           </div>
-        ) : (
-          <NewsGrid news={news} />
         )}
+        <NewsGrid news={news} />
       </section>
+
+      {/* 페이지네이션 */}
+      <div className="mb-10 md:mb-14">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      </div>
 
       {/* 광고 + 커뮤니티 HOT */}
       <section>

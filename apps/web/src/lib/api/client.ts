@@ -64,10 +64,11 @@ async function request<T>(
 
   // 401 인터셉터 — refresh 시도 후 재요청, 실패 시 로그아웃
   if (res.status === 401) {
-    // refresh 엔드포인트 자체가 401이면 재시도 없이 로그아웃 처리
-    if (path === '/api/auth/refresh') {
-      handleAuthExpired()
-      throw new Error('UNAUTHORIZED')
+    // 인증 관련 엔드포인트(로그인/refresh)는 401을 그대로 반환 — 세션 만료 처리 불필요
+    const AUTH_PASSTHROUGH_PATHS = ['/api/auth/refresh', '/api/auth/login']
+    if (AUTH_PASSTHROUGH_PATHS.includes(path)) {
+      const json = await res.json()
+      return json as ApiResponse<T>
     }
 
     const newToken = await refreshAccessToken()
