@@ -38,6 +38,6 @@ export const SUB_CATEGORIES: Record<string, string[]> = {
     '승리의 여신: 니케',
     '기타 모바일',
   ],
-  Console: ['PlayStation', 'Xbox', 'Nintendo', '기타 콘솔'],
+  Console: ['PlayStation', 'Xbox', 'Nintendo'],
   Esports: ['LCK', 'VCT', '기타 Esports'],
 }

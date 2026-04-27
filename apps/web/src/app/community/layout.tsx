@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import CategorySidebar from '@/components/community/CategorySidebar'
+import CategorySidebarConnected from '@/components/community/CategorySidebarConnected'
 import PopularPostsWidget from '@/components/community/PopularPostsWidget'
 
 interface CommunityLayoutProps {
@@ -14,7 +14,7 @@ export default function CommunityLayout({ children }: CommunityLayoutProps) {
         <div className="flex gap-5">
           {/* 좌측 사이드바 — 데스크톱(lg 이상)에서만 노출 */}
           <div className="hidden lg:block">
-            <CategorySidebar />
+            <CategorySidebarConnected />
           </div>
 
           {/* 중앙 콘텐츠 */}

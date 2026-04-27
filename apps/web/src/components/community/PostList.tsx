@@ -198,7 +198,10 @@ export default function PostList() {
                   <li key={option}>
                     <button
                       type="button"
-                      onClick={() => { setSort(option); setSortOpen(false) }}
+                      onClick={() => {
+                        setSort(option)
+                        setSortOpen(false)
+                      }}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--color-surface)] transition-colors ${sort === option ? 'text-[var(--color-primary)] font-medium' : 'text-text-secondary'}`}
                     >
                       {SORT_LABELS[option]}

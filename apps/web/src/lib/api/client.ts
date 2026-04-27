@@ -78,8 +78,9 @@ async function request<T>(
       throw new Error('UNAUTHORIZED')
     }
 
-    // 새 accessToken을 스토어에 저장
+    // 새 accessToken을 스토어 + 쿠키에 저장 (미들웨어 인증 체크 동기화)
     useAuthStore.setState({ accessToken: newToken })
+    document.cookie = `accessToken=${newToken}; path=/; max-age=86400`
 
     // 원래 요청 재시도
     const retryRes = await fetch(`${BASE_URL}${path}`, {

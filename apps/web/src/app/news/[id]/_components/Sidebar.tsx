@@ -55,7 +55,7 @@ function formatViewCount(count: number): string {
 async function fetchPopularNews(mainCategory: string): Promise<PopularNewsItem[]> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
   try {
-    const res = await fetch(`${baseUrl}/news/popular?mainCategory=${mainCategory}&limit=5`, {
+    const res = await fetch(`${baseUrl}/api/news/popular?mainCategory=${mainCategory}&limit=5`, {
       next: { revalidate: 600 },
     })
     if (!res.ok) return []
@@ -72,7 +72,7 @@ async function fetchPopularPosts(categoryId: number): Promise<PopularPostItem[]>
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
   try {
     const res = await fetch(
-      `${baseUrl}/posts?sort=popular&categoryId=${categoryId}&limit=5&page=1`,
+      `${baseUrl}/api/posts?sort=popular&categoryId=${categoryId}&limit=5&page=1`,
       { next: { revalidate: 600 } }
     )
     if (!res.ok) return []

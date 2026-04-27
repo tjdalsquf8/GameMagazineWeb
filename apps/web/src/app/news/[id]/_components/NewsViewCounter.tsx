@@ -13,7 +13,7 @@ interface NewsViewCounterProps {
 
 // 조회수 증가 요청 — 실패해도 UX에 영향 없도록 무시
 async function incrementNewsView(newsId: string): Promise<void> {
-  await apiClient.post(`/news/${newsId}/view`).catch(() => {})
+  await apiClient.post(`/api/news/${newsId}/view`).catch(() => {})
 }
 
 // 뉴스 상세 진입 시 조회수를 하루 1회만 증가시키는 컴포넌트

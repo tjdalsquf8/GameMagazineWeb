@@ -33,7 +33,7 @@ interface ApiResponse<T> {
 async function fetchArticle(id: string): Promise<NewsDetail | null> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
-  const res = await fetch(`${baseUrl}/news/${id}`, {
+  const res = await fetch(`${baseUrl}/api/news/${id}`, {
     next: { revalidate: 3600 },
   })
 

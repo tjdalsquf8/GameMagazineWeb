@@ -21,7 +21,7 @@ export interface Post {
   isRecommended: boolean
   createdAt: string
   updatedAt: string
-  author: PostAuthor
+  author: PostAuthor | null
   category: PostCategory
   _count: { comments: number; postRecommends: number }
 }

@@ -50,9 +50,6 @@ export const COMMUNITY_CATEGORIES: Category[] = [
       { id: 24, name: 'PlayStation', slug: 'playstation' },
       { id: 25, name: 'Xbox', slug: 'xbox' },
       { id: 26, name: 'Nintendo', slug: 'nintendo' },
-      { id: 27, name: '엘든링', slug: 'elden-ring' },
-      { id: 28, name: '파이널판타지', slug: 'final-fantasy' },
-      { id: 29, name: '기타 콘솔', slug: 'etc-console' },
     ],
   },
   {

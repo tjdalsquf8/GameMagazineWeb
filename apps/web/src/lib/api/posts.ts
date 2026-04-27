@@ -25,7 +25,7 @@ export async function getPosts(params?: GetPostsParams): Promise<PostListRespons
   }
 
   const query = searchParams.toString()
-  const path = query ? `/posts?${query}` : '/posts'
+  const path = query ? `/api/posts?${query}` : '/api/posts'
   const res = await apiClient.get<PostListResponse>(path)
 
   if ('success' in res && !res.success) {
@@ -42,7 +42,7 @@ export async function getPosts(params?: GetPostsParams): Promise<PostListRespons
 
 /** 게시글 단건 조회 (조회수 증가 없음) */
 export async function getPost(postId: number): Promise<Post> {
-  const res = await apiClient.get<Post>(`/posts/${postId}`)
+  const res = await apiClient.get<Post>(`/api/posts/${postId}`)
 
   if ('success' in res && !res.success) {
     throw new Error((res as { success: false; error: { message: string } }).error.message)
@@ -58,7 +58,7 @@ export async function getPost(postId: number): Promise<Post> {
 
 /** 조회수 증가 전용 API 호출 — POST /posts/:id/view */
 export async function incrementPostView(postId: number): Promise<void> {
-  await apiClient.post<{ success: boolean }>(`/posts/${postId}/view`, {})
+  await apiClient.post<{ success: boolean }>(`/api/posts/${postId}/view`, {})
 }
 
 /** 게시글 생성 */
@@ -66,7 +66,7 @@ export async function createPost(
   body: { title: string; content: string; categoryId: number },
   token: string
 ): Promise<Post> {
-  const res = await apiClient.post<Post>('/posts', body, { token })
+  const res = await apiClient.post<Post>('/api/posts', body, { token })
 
   if ('success' in res && !res.success) {
     throw new Error((res as { success: false; error: { message: string } }).error.message)
@@ -85,7 +85,7 @@ export async function updatePost(
   body: { title?: string; content?: string },
   token: string
 ): Promise<Post> {
-  const res = await apiClient.patch<Post>(`/posts/${postId}`, body, { token })
+  const res = await apiClient.patch<Post>(`/api/posts/${postId}`, body, { token })
 
   if ('success' in res && !res.success) {
     throw new Error((res as { success: false; error: { message: string } }).error.message)
@@ -100,7 +100,7 @@ export async function updatePost(
 
 /** 게시글 삭제 */
 export async function deletePost(postId: number, token: string): Promise<void> {
-  const res = await apiClient.delete<{ message: string }>(`/posts/${postId}`, { token })
+  const res = await apiClient.delete<{ message: string }>(`/api/posts/${postId}`, { token })
 
   if ('success' in res && !res.success) {
     throw new Error((res as { success: false; error: { message: string } }).error.message)
@@ -109,7 +109,7 @@ export async function deletePost(postId: number, token: string): Promise<void> {
 
 /** 댓글 목록 조회 */
 export async function getComments(postId: number): Promise<CommentListResponse> {
-  const res = await apiClient.get<CommentListResponse>(`/posts/${postId}/comments`)
+  const res = await apiClient.get<CommentListResponse>(`/api/posts/${postId}/comments`)
 
   if ('success' in res && !res.success) {
     throw new Error((res as { success: false; error: { message: string } }).error.message)
@@ -129,7 +129,7 @@ export async function createComment(
   body: { content: string; parentId?: number },
   token: string
 ): Promise<Comment> {
-  const res = await apiClient.post<Comment>(`/posts/${postId}/comments`, body, { token })
+  const res = await apiClient.post<Comment>(`/api/posts/${postId}/comments`, body, { token })
 
   if ('success' in res && !res.success) {
     throw new Error((res as { success: false; error: { message: string } }).error.message)
@@ -149,7 +149,7 @@ export async function updateComment(
   body: { content: string },
   token: string
 ): Promise<Comment> {
-  const res = await apiClient.patch<Comment>(`/posts/${postId}/comments/${commentId}`, body, {
+  const res = await apiClient.patch<Comment>(`/api/posts/${postId}/comments/${commentId}`, body, {
     token,
   })
 
@@ -171,7 +171,7 @@ export async function deleteComment(
   token: string
 ): Promise<void> {
   const res = await apiClient.delete<{ message: string }>(
-    `/posts/${postId}/comments/${commentId}`,
+    `/api/posts/${postId}/comments/${commentId}`,
     { token }
   )
 
@@ -186,7 +186,7 @@ export async function togglePostRecommend(
   token: string
 ): Promise<{ recommended: boolean; recommendCount: number }> {
   const res = await apiClient.post<{ recommended: boolean; recommendCount: number }>(
-    `/posts/${postId}/recommend`,
+    `/api/posts/${postId}/recommend`,
     {},
     { token }
   )
@@ -209,7 +209,7 @@ export async function toggleCommentRecommend(
   token: string
 ): Promise<{ recommended: boolean; recommendCount: number }> {
   const res = await apiClient.post<{ recommended: boolean; recommendCount: number }>(
-    `/posts/${postId}/comments/${commentId}/recommend`,
+    `/api/posts/${postId}/comments/${commentId}/recommend`,
     {},
     { token }
   )

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Menu, X } from 'lucide-react' // Lucide 아이콘 임포트
-import CategorySidebar from './CategorySidebar'
+import CategorySidebarConnected from './CategorySidebarConnected'
 
 export default function CommunityDrawer() {
   const [isOpen, setIsOpen] = useState(false)
@@ -59,7 +59,7 @@ export default function CommunityDrawer() {
 
         {/* 카테고리 사이드바 */}
         <div className="p-4">
-          <CategorySidebar onClose={close} />
+          <CategorySidebarConnected onClose={close} />
         </div>
       </div>
     </>

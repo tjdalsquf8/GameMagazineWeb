@@ -22,14 +22,14 @@ interface RecommendData {
 
 // 좋아요 상태 초기 로드 — GET /news/:id/recommend
 async function fetchRecommendState(newsId: string): Promise<RecommendData> {
-  const res = await apiClient.get<RecommendData>(`/news/${newsId}/recommend`)
+  const res = await apiClient.get<RecommendData>(`/api/news/${newsId}/recommend`)
   if (!res.success) return { liked: false, count: 0 }
   return res.data
 }
 
 // 좋아요 토글 요청 — POST /news/:id/recommend
 async function postToggleRecommend(newsId: string): Promise<RecommendData> {
-  const res = await apiClient.post<RecommendData>(`/news/${newsId}/recommend`)
+  const res = await apiClient.post<RecommendData>(`/api/news/${newsId}/recommend`)
   if (!res.success) throw new Error('추천 요청 실패')
   return res.data
 }

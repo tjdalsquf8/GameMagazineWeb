@@ -10,6 +10,7 @@ import { CommentsModule } from './comments/comments.module'
 import { UploadModule } from './uploads/upload.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { NewsModule } from './news/news.module'
+import { UsersModule } from './users/users.module'
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { NewsModule } from './news/news.module'
     CommentsModule,
     UploadModule,
     NewsModule,
+    UsersModule,
   ],
   providers: [
     {
