@@ -75,6 +75,7 @@ export class PostsService {
     switch (query.sort) {
       case PostSortOption.POPULAR:
         orderBy = { viewCount: "desc" };
+        where.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
         break;
       case PostSortOption.COMMENTS:
         orderBy = { comments: { _count: "desc" } };

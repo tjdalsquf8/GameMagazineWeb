@@ -12,8 +12,8 @@ interface NavLinksProps {
 }
 
 const NAV_ITEMS = [
-  { label: '뉴스', href: '/news' },
-  { label: '커뮤니티', href: '/community' },
+  { label: '뉴스', href: '/', exact: true },
+  { label: '커뮤니티', href: '/community', exact: false },
 ]
 
 // 네비게이션 링크 목록 컴포넌트 (데스크탑/모바일 레이아웃 분기)
@@ -24,7 +24,7 @@ export function NavLinks({ variant, onClose }: NavLinksProps) {
     return (
       <nav className="flex items-center gap-6">
         {NAV_ITEMS.map((item) => {
-          const isActive = pathname.startsWith(item.href)
+          const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
           return (
             <Link
               key={item.href}
@@ -47,7 +47,7 @@ export function NavLinks({ variant, onClose }: NavLinksProps) {
   return (
     <nav className="flex flex-col">
       {NAV_ITEMS.map((item) => {
-        const isActive = pathname.startsWith(item.href)
+        const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href)
         return (
           <Link
             key={item.href}

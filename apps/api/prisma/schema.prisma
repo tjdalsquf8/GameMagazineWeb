@@ -112,13 +112,13 @@ model Post {
   content    String    @db.Text
   images     String[]  @default([])
   viewCount  Int       @default(0) @map("view_count")
-  authorId   String    @map("author_id")
+  authorId   String?   @map("author_id")
   categoryId Int       @map("category_id")
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
   deletedAt  DateTime? @map("deleted_at")
 
-  author         User            @relation(fields: [authorId], references: [id])
+  author         User?           @relation(fields: [authorId], references: [id], onDelete: SetNull)
   category       Category        @relation(fields: [categoryId], references: [id])
   comments       Comment[]
   postLikes      PostLike[]
@@ -138,14 +138,14 @@ model Comment {
   id        Int       @id @default(autoincrement())
   content   String    @db.Text
   postId    Int       @map("post_id")
-  authorId  String    @map("author_id")
+  authorId  String?   @map("author_id")
   parentId  Int?      @map("parent_id")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
   post              Post               @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author            User               @relation(fields: [authorId], references: [id])
+  author            User?              @relation(fields: [authorId], references: [id], onDelete: SetNull)
   parent            Comment?           @relation("CommentReplies", fields: [parentId], references: [id])
   replies           Comment[]          @relation("CommentReplies")
   commentRecommends CommentRecommend[]
@@ -162,7 +162,7 @@ model PostLike {
   createdAt DateTime @default(now()) @map("created_at")
 
   post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@map("post_likes")

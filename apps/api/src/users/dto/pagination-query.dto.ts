@@ -1,0 +1,20 @@
+// users/dto/pagination-query.dto.ts
+// 페이지네이션 쿼리 파라미터 DTO
+
+import { IsInt, IsOptional, Min, Max } from 'class-validator'
+import { Type } from 'class-transformer'
+
+export class PaginationQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number = 20
+}

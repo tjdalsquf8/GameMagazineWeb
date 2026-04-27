@@ -40,7 +40,7 @@ export function useImageUpload(): UseImageUploadReturn {
     setIsLoading(true)
     setProgress(0)
     try {
-      const res = await apiClient.post<PresignedUrlResult>('/uploads/presigned-url', {
+      const res = await apiClient.post<PresignedUrlResult>('/api/uploads/presigned-url', {
         contentType: file.type,
         fileSize: file.size,
       })

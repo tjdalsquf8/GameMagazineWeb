@@ -101,7 +101,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
       : null
   // ---------------------------------------
 
-  const isOwnPost = user !== null && post !== null && user.id === post.author.id
+  const isOwnPost = user !== null && post !== null && post.author !== null && user.id === post.author.id
 
   /** 게시글 삭제 처리 */
   const handleDelete = async () => {
@@ -194,7 +194,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
       <h1 className="text-2xl font-bold text-text-primary leading-tight mb-3">{post.title}</h1>
 
       <div className="flex items-center gap-3 text-sm text-text-muted mb-4">
-        <span className="text-text-secondary font-medium">{post.author.nickname}</span>
+        <span className="text-text-secondary font-medium">{post.author?.nickname ?? '(탈퇴한 회원)'}</span>
         <span>{formatFullDate(post.createdAt)}</span>
         <span>조회 {post.viewCount.toLocaleString()}</span>
       </div>

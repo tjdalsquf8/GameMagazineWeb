@@ -20,7 +20,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto'
 import { ConfigService } from '@nestjs/config'
 
 @Throttle({ default: { limit: 10, ttl: 60000 } })
-@Controller('api/auth')
+// setGlobalPrefix('api')로 /api prefix가 자동 적용되므로 'auth'만 선언
+@Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,

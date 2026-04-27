@@ -50,7 +50,7 @@ export default function EditForm({ postId }: EditFormProps) {
       .then((post) => {
         if (cancelled) return
         // 본인 글이 아니면 상세 페이지로 redirect
-        if (user && post.author.id !== user.id) {
+        if (user && post.author !== null && post.author.id !== user.id) {
           router.push(`/community/${postId}`)
           return
         }

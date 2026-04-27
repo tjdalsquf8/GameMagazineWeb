@@ -9,7 +9,7 @@ import type { NewsListResponse } from '@/types/news'
 async function fetchInitialNews(): Promise<NewsListResponse> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/news?limit=20`,
+      `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/news?limit=20`,
       { next: { revalidate: 300 } }
     )
     if (!res.ok) return { data: [], meta: { total: 0, page: 1, limit: 20 } }

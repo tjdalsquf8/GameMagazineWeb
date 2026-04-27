@@ -85,7 +85,7 @@ export function UserMenu({ variant, onClose }: UserMenuProps) {
         </div>
         {/* 마이페이지 링크 */}
         <Link
-          href="/mypage"
+          href="/my"
           onClick={onClose}
           className="flex items-center min-h-[48px] px-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
         >
@@ -124,7 +124,7 @@ export function UserMenu({ variant, onClose }: UserMenuProps) {
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-40 bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-lg py-1 z-50">
           <Link
-            href="/mypage"
+            href="/my"
             onClick={() => setIsOpen(false)}
             className="block px-4 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors"
           >

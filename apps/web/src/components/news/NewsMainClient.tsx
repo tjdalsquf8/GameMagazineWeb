@@ -57,7 +57,7 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
         if (subCategory !== null) params.set('subCategory', subCategory)
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/news?${params.toString()}`
+          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/news?${params.toString()}`
         )
         if (!res.ok) {
           setNews([])

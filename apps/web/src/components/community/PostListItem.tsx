@@ -45,7 +45,7 @@ export default function PostListItem({ post, index }: PostListItemProps) {
         </Link>
       </td>
       <td className="py-3 px-2 text-sm text-text-secondary text-center w-24 hidden md:table-cell">
-        {post.author.nickname}
+        {post.author?.nickname ?? '(탈퇴한 회원)'}
       </td>
       <td className="py-3 px-2 text-sm text-text-muted text-center w-20 hidden sm:table-cell">
         {formatDate(post.createdAt)}

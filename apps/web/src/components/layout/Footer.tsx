@@ -3,7 +3,7 @@
 import Link from 'next/link'
 
 const SERVICE_LINKS = [
-  { label: '뉴스', href: '/news' },
+  { label: '뉴스', href: '/' },
   { label: '커뮤니티', href: '/community' },
 ]
 

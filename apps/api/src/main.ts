@@ -9,6 +9,9 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // 모든 라우트에 /api prefix 적용 — 프론트엔드 apiClient 경로 기준과 통일
+  app.setGlobalPrefix('api');
+
   app.enableCors({
     origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
     credentials: true,
