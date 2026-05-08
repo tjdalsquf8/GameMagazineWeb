@@ -29,6 +29,7 @@ export default function LoginForm() {
   const { setAuth } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
 
@@ -50,7 +51,7 @@ export default function LoginForm() {
     setErrors({})
 
     try {
-      const res = await login(email, password)
+      const res = await login(email, password, rememberMe)
       if (res.success) {
         setAuth(res.data.user, res.data.accessToken)
         setAccessTokenCookie(res.data.accessToken)
@@ -122,6 +123,16 @@ export default function LoginForm() {
           />
           {errors.password && <p className="mt-1.5 text-xs text-red-500">{errors.password}</p>}
         </div>
+
+        <label className="flex items-center gap-2 cursor-pointer select-none w-fit">
+          <input
+            type="checkbox"
+            checked={rememberMe}
+            onChange={(e) => setRememberMe(e.target.checked)}
+            className="w-4 h-4 rounded border-border accent-primary cursor-pointer"
+          />
+          <span className="text-sm text-text-secondary">로그인 유지</span>
+        </label>
 
         {errors.general && (
           <div className="rounded-lg bg-red-50 border border-red-200 px-3.5 py-3">

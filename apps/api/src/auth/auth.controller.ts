@@ -54,7 +54,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const result = await this.authService.login(dto)
-    const { refreshToken, ...responseData } = result as typeof result & { refreshToken: string }
+    const { refreshToken, rememberMe, ...responseData } = result
 
     const isProd = this.configService.get<string>('NODE_ENV') === 'production'
 
@@ -64,7 +64,8 @@ export class AuthController {
       // TODO: 배포 시 'lax'로 변경 필요 — Vercel(FE) ↔ AWS EC2(BE) 크로스 도메인 환경에서는
       // sameSite: 'strict'이면 쿠키가 전달되지 않음
       sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30일
+      // rememberMe: 30일 유지 / 미체크: 브라우저 닫으면 만료 (session cookie)
+      ...(rememberMe ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : {}),
       path: '/',
     })
 
@@ -73,10 +74,15 @@ export class AuthController {
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.['refreshToken'] as string | undefined
+    if (refreshToken) {
+      await this.authService.logout(refreshToken)
+    }
+    const isProd = this.configService.get<string>('NODE_ENV') === 'production'
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      // TODO: 배포 시 'lax'로 변경 필요 — login 쿠키 설정과 동일하게 맞춰야 함
+      secure: isProd,
       sameSite: 'strict',
       path: '/',
     })
@@ -86,7 +92,7 @@ export class AuthController {
   @Post('refresh')
   @Throttle({ default: { limit: 100, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
-  async refresh(@Req() req: Request) {
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies?.['refreshToken'] as string | undefined
     if (!refreshToken) {
       return {
@@ -95,7 +101,18 @@ export class AuthController {
       }
     }
     const result = await this.authService.refresh(refreshToken)
-    return { success: true, data: result }
+
+    // Rotation: 새 refresh token을 쿠키에 재설정
+    const isProd = this.configService.get<string>('NODE_ENV') === 'production'
+    res.cookie('refreshToken', result.refreshToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: '/',
+    })
+
+    return { success: true, data: { accessToken: result.accessToken } }
   }
 
   // ============================
