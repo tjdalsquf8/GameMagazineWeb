@@ -23,10 +23,11 @@ export async function register(email: string, nickname: string, password: string
   return apiClient.post<{ user: User }>('/api/auth/register', { email, nickname, password })
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, rememberMe = false) {
   return apiClient.post<{ user: User; accessToken: string }>('/api/auth/login', {
     email,
     password,
+    rememberMe,
   })
 }
 

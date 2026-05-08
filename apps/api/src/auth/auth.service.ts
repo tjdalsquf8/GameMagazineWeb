@@ -3,6 +3,7 @@ import {
   ConflictException,
   BadRequestException,
   UnauthorizedException,
+  ForbiddenException,
   NotFoundException,
   Logger,
   HttpException,
@@ -20,7 +21,7 @@ import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { VerifyResetTokenDto } from "./dto/verify-reset-token.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import * as bcrypt from "bcrypt";
-import * as crypto from "crypto";
+import { randomInt, createHash } from "crypto";
 
 interface ResetTokenPayload {
   sub: string;
@@ -72,7 +73,7 @@ export class AuthService {
     }
 
     // 6자리 랜덤 코드 생성 (crypto 모듈 사용)
-    const code = crypto.randomInt(100000, 999999).toString();
+    const code = randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
     // upsert: 기존 미인증 레코드 있으면 업데이트, 없으면 생성
@@ -189,8 +190,8 @@ export class AuthService {
 
   async login(
     dto: LoginDto,
-  ): Promise<{ user: object; accessToken: string; refreshToken: string }> {
-    const { email, password } = dto;
+  ): Promise<{ user: object; accessToken: string; refreshToken: string; rememberMe: boolean }> {
+    const { email, password, rememberMe = false } = dto;
 
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -210,13 +211,43 @@ export class AuthService {
       );
     }
 
-    const payload = { sub: user.id, email: user.email };
+    // 계정 정지 체크 — 정지 기간이 만료된 경우 자동 해제
+    if (user.isBanned) {
+      const isExpired = user.bannedUntil && user.bannedUntil < new Date()
+      if (!isExpired) {
+        throw new ForbiddenException(
+          user.bannedUntil
+            ? `계정이 ${user.bannedUntil.toLocaleDateString('ko-KR')}까지 정지되었습니다`
+            : '계정이 영구 정지되었습니다',
+        )
+      }
+      // 정지 기간 만료 시 자동 해제
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { isBanned: false, bannedUntil: null, banReason: null },
+      })
+    }
+
+    // 마지막 로그인 시간 업데이트
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    })
+
+    const payload = { sub: user.id, email: user.email, role: user.role };
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: "24h",
     });
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
       expiresIn: "30d",
+    });
+
+    // refresh token을 SHA-256 해시 후 DB 저장 (원본 노출 방지)
+    const tokenHash = createHash("sha256").update(refreshToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await this.prisma.refreshToken.create({
+      data: { userId: user.id, tokenHash, expiresAt },
     });
 
     this.logger.log(`로그인 완료: ${email}`);
@@ -234,36 +265,64 @@ export class AuthService {
       },
       accessToken,
       refreshToken,
+      rememberMe,
     };
   }
 
-  async refresh(refreshToken: string): Promise<{ accessToken: string }> {
+  async refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
+    // 1단계: JWT 서명 검증
+    let payload: { sub: string; email: string; role: string };
     try {
-      const payload = this.jwtService.verify<{ sub: string; email: string }>(
+      payload = this.jwtService.verify<{ sub: string; email: string; role: string }>(
         refreshToken,
-        {
-          secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
-        },
+        { secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET") },
       );
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        select: { id: true, email: true },
-      });
-
-      if (!user) {
-        throw new UnauthorizedException("유효하지 않은 토큰입니다");
-      }
-
-      const newPayload = { sub: user.id, email: user.email };
-      const accessToken = this.jwtService.sign(newPayload, {
-        expiresIn: "24h",
-      });
-
-      return { accessToken };
     } catch {
       throw new UnauthorizedException("유효하지 않은 토큰입니다");
     }
+
+    // 2단계: DB에 토큰 존재 여부 확인 (로그아웃/탈취 여부)
+    const tokenHash = createHash("sha256").update(refreshToken).digest("hex");
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!stored || stored.expiresAt < new Date()) {
+      // 만료된 토큰 레코드 정리
+      if (stored) await this.prisma.refreshToken.delete({ where: { tokenHash } });
+      throw new UnauthorizedException("유효하지 않은 토큰입니다");
+    }
+
+    // 3단계: Refresh Token Rotation — 구 토큰 삭제 후 새 토큰 발급
+    await this.prisma.refreshToken.delete({ where: { tokenHash } });
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true, role: true },
+    });
+    if (!user) throw new UnauthorizedException("유효하지 않은 토큰입니다");
+
+    const newPayload = { sub: user.id, email: user.email, role: user.role };
+    const accessToken = this.jwtService.sign(newPayload, { expiresIn: "24h" });
+    const newRefreshToken = this.jwtService.sign(newPayload, {
+      secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
+      expiresIn: "30d",
+    });
+
+    const newTokenHash = createHash("sha256").update(newRefreshToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await this.prisma.refreshToken.create({
+      data: { userId: user.id, tokenHash: newTokenHash, expiresAt },
+    });
+
+    return { accessToken, refreshToken: newRefreshToken };
+  }
+
+  async logout(refreshToken: string): Promise<void> {
+    if (!refreshToken) return;
+    const tokenHash = createHash("sha256").update(refreshToken).digest("hex");
+    await this.prisma.refreshToken.deleteMany({ where: { tokenHash } });
+    this.logger.log(`로그아웃: tokenHash=${tokenHash.slice(0, 8)}...`);
   }
 
   // ============================
@@ -288,7 +347,7 @@ export class AuthService {
       });
     }
 
-    const code = crypto.randomInt(100000, 999999).toString();
+    const code = randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     await this.prisma.passwordResetToken.upsert({
