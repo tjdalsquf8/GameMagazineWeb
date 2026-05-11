@@ -80,3 +80,21 @@ export async function updateNotificationSettings(
 export async function deleteAccount(): Promise<ApiResponse<{ message: string }>> {
   return apiClient.delete<{ message: string }>('/api/users/me')
 }
+
+/** Presigned URL 발급 — R2 직접 업로드용 서명된 URL과 최종 공개 URL 반환 */
+export async function getPresignedUrl(
+  contentType: string,
+  fileSize: number,
+  folder: string
+): Promise<ApiResponse<{ uploadUrl: string; publicUrl: string }>> {
+  return apiClient.post<{ uploadUrl: string; publicUrl: string }>('/api/uploads/presigned-url', {
+    contentType,
+    fileSize,
+    folder,
+  })
+}
+
+/** 프로필 이미지 URL 저장 — 업로드 완료 후 서버에 publicUrl 반영 */
+export async function updateProfileImage(profileImage: string): Promise<ApiResponse<MyProfile>> {
+  return apiClient.patch<MyProfile>('/api/users/me/profile-image', { profileImage })
+}

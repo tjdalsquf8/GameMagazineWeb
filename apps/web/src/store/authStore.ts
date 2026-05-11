@@ -19,6 +19,7 @@ interface AuthState {
   setAuth: (user: User, accessToken: string) => void
   clearAuth: () => void
   updateNickname: (nickname: string) => void
+  updateProfileImage: (url: string) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -31,6 +32,8 @@ export const useAuthStore = create<AuthState>()(
       clearAuth: () => set({ user: null, accessToken: null, isAuthenticated: false }),
       updateNickname: (nickname) =>
         set((state) => ({ user: state.user ? { ...state.user, nickname } : null })),
+      updateProfileImage: (profileImage) =>
+        set((state) => ({ user: state.user ? { ...state.user, profileImage } : null })),
     }),
     {
       name: 'auth-storage',

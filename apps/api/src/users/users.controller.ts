@@ -16,6 +16,7 @@ import {
 import { UsersService } from './users.service'
 import { UpdateNicknameDto } from './dto/update-nickname.dto'
 import { UpdatePasswordDto } from './dto/update-password.dto'
+import { UpdateProfileImageDto } from './dto/update-profile-image.dto'
 import { PaginationQueryDto } from './dto/pagination-query.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { Role } from '@prisma/client'
@@ -50,6 +51,16 @@ export class UsersController {
   ) {
     const data = await this.usersService.updateNickname(req.user.id, dto)
     return { success: true, data, message: '닉네임이 변경되었습니다.' }
+  }
+
+  /** PATCH /users/me/profile-image — 프로필 이미지 변경 */
+  @Patch('profile-image')
+  async updateProfileImage(
+    @Body() dto: UpdateProfileImageDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.usersService.updateProfileImage(req.user.id, dto)
+    return { success: true, data, message: '프로필 이미지가 변경되었습니다.' }
   }
 
   /** PATCH /users/me/password — 비밀번호 변경 */

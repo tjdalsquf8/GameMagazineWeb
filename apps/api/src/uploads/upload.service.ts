@@ -50,7 +50,8 @@ export class UploadService {
     }
 
     const ext = MIME_TO_EXT[dto.contentType]
-    const key = `posts/${userId}/${randomUUID()}.${ext}`
+    const folder = dto.folder ?? 'posts'
+    const key = `${folder}/${userId}/${randomUUID()}.${ext}`
     const bucket = process.env.R2_BUCKET_NAME!
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`
 

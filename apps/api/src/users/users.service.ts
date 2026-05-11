@@ -11,6 +11,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service'
 import { UpdateNicknameDto } from './dto/update-nickname.dto'
 import { UpdatePasswordDto } from './dto/update-password.dto'
+import { UpdateProfileImageDto } from './dto/update-profile-image.dto'
 import { PaginationQueryDto } from './dto/pagination-query.dto'
 import * as bcrypt from 'bcrypt'
 
@@ -98,6 +99,18 @@ export class UsersService {
         likes: user._count.postLikes,
       },
     }
+  }
+
+  /** 프로필 이미지 변경 — R2 업로드 완료 후 공개 URL을 DB에 저장 */
+  async updateProfileImage(userId: string, dto: UpdateProfileImageDto) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { profileImage: dto.profileImage },
+      select: USER_PROFILE_SELECT,
+    })
+
+    this.logger.log(`프로필 이미지 변경 완료: userId=${userId}`)
+    return user
   }
 
   /** 비밀번호 변경 — 현재 비밀번호 검증 후 변경 */

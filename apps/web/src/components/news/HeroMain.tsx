@@ -1,10 +1,10 @@
 // Hero 섹션 좌측 메인 뷰어 컴포넌트
 // 현재 선택된 뉴스를 대형 이미지 + 오버레이 텍스트로 표시
-// 전체 탭 자동 순환 인디케이터 포함
+// 전체 탭 자동 순환 인디케이터 + 좌우 이동 버튼 포함
 'use client'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Clock } from 'lucide-react'
+import { Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import type { HeroNews, CategorySlug } from '@/lib/mock/news'
 import { CategoryBadge } from './CategoryBadge'
 
@@ -23,6 +23,9 @@ interface HeroMainProps {
   autoIndex: number
   // 페이드 전환 여부 (애니메이션 트리거)
   isFading: boolean
+  // 전체 탭 좌우 이동 버튼 핸들러 (undefined이면 버튼 미표시)
+  onPrev?: () => void
+  onNext?: () => void
 }
 
 // 조회수 포맷 함수 — 1만 이상이면 N만 형태로 변환
@@ -34,7 +37,7 @@ function formatViewCount(count: number): string {
 }
 
 // Hero 메인 뷰어 컴포넌트
-export function HeroMain({ news, activeCategory, autoIndex, isFading }: HeroMainProps) {
+export function HeroMain({ news, activeCategory, autoIndex, isFading, onPrev, onNext }: HeroMainProps) {
   return (
     <div className="relative w-full">
       {/* 이미지 영역 */}
@@ -73,6 +76,26 @@ export function HeroMain({ news, activeCategory, autoIndex, isFading }: HeroMain
               <span>{formatViewCount(news.viewCount)}</span>
             </div>
           </div>
+
+          {/* 좌우 이동 버튼 — 전체 탭에서만 표시 */}
+          {onPrev && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPrev() }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/65 text-white rounded-full p-2 transition-colors"
+              aria-label="이전 슬라이드"
+            >
+              <ChevronLeft size={20} />
+            </button>
+          )}
+          {onNext && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onNext() }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/65 text-white rounded-full p-2 transition-colors"
+              aria-label="다음 슬라이드"
+            >
+              <ChevronRight size={20} />
+            </button>
+          )}
         </div>
       </Link>
 

@@ -61,9 +61,7 @@ export class AuthController {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProd,
-      // TODO: 배포 시 'lax'로 변경 필요 — Vercel(FE) ↔ AWS EC2(BE) 크로스 도메인 환경에서는
-      // sameSite: 'strict'이면 쿠키가 전달되지 않음
-      sameSite: 'strict',
+      sameSite: isProd ? 'lax' : 'strict',
       // rememberMe: 30일 유지 / 미체크: 브라우저 닫으면 만료 (session cookie)
       ...(rememberMe ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : {}),
       path: '/',
