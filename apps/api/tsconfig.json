@@ -17,5 +17,6 @@
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "noFallthroughCasesInSwitch": true
-  }
+  },
+  "exclude": ["node_modules", "dist", "prisma"]
 }

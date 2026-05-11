@@ -56,8 +56,6 @@ export default function PostDetail({ postId }: PostDetailProps) {
           setRecommended(data.isRecommended ?? false)
           setRecommendCount(data.recommendCount ?? 0)
           // 조회수 증가 — 하루 1회 제한 (localStorage 기반)
-          // TODO: 추후 Redis TTL 방식으로 교체 예정
-          //       key: "view:{postId}:{userId or IP}", TTL: 24h
           if (!viewedRef.current) {
             viewedRef.current = true
             const storageKey = `viewedPost:${postId}`

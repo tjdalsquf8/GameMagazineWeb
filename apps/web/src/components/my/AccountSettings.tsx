@@ -97,7 +97,6 @@ export default function AccountSettings({
           updateNickname(newNickname)
           onNicknameChange?.(newNickname)
           setOpenModal(null)
-          window.location.reload()
         }}
       />
       <EditPasswordModal isOpen={openModal === 'password'} onClose={() => setOpenModal(null)} />

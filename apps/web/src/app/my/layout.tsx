@@ -3,9 +3,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { useAuthStore } from '@/store/authStore'
 import { useMyProfile } from '@/hooks/useMyProfile'
 import ProfileCard from '@/components/my/ProfileCard'
 
@@ -39,6 +41,8 @@ export default function MyLayout({ children }: MyLayoutProps) {
   const { isAuthenticated, isLoading: isAuthLoading } = useAuth()
   const router = useRouter()
   const { profile, isLoading } = useMyProfile()
+  // authStore에서 profileImage를 직접 구독 — 업로드 후 즉시 모바일 헤더 반영
+  const storeProfileImage = useAuthStore((s) => s.user?.profileImage ?? null)
   const [activeSection, setActiveSection] = useState('posts')
   const observerRef = useRef<IntersectionObserver | null>(null)
 
@@ -88,11 +92,49 @@ export default function MyLayout({ children }: MyLayoutProps) {
   // hydration 완료 전 또는 미인증 상태에서는 빈 화면 반환 — 깜빡임 방지
   if (isAuthLoading || !isAuthenticated) return null
 
+  const avatarChar = profile?.nickname?.charAt(0)?.toUpperCase() ?? '?'
+  // store 값이 최신이므로 store 우선, 없으면 서버 프로필 값 사용
+  const profileImage = storeProfileImage ?? profile?.profileImage ?? null
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
-      <div className="max-w-[960px] mx-auto px-6 py-8">
-        {/* 모바일 탭 (md 미만) */}
+      <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 md:py-8">
+        {/* 모바일 전용 프로필 헤더 */}
         <div className="md:hidden mb-4">
+          {isLoading ? (
+            <div className="flex items-center gap-3 animate-pulse mb-4">
+              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 shrink-0" />
+              <div className="space-y-1.5">
+                <div className="h-3.5 w-24 rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-3 w-32 rounded bg-gray-200 dark:bg-gray-700" />
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 mb-4">
+              {/* 프로필 이미지 있으면 next/image, 없으면 그라디언트 아바타 */}
+              {profileImage ? (
+                <Image
+                  src={profileImage}
+                  alt={`${profile?.nickname ?? '사용자'} 프로필 이미지`}
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 rounded-full object-cover shrink-0"
+                />
+              ) : (
+                <div className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold text-white bg-gradient-to-br from-violet-600 to-blue-600 shrink-0 select-none">
+                  {avatarChar}
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[var(--color-text-primary)] truncate">
+                  {profile?.nickname ?? '-'}
+                </p>
+                <p className="text-xs text-[var(--color-text-muted)] truncate">
+                  {profile?.email ?? '-'}
+                </p>
+              </div>
+            </div>
+          )}
           <MobileTabBar activeSection={activeSection} onTabClick={handleSectionClick} />
         </div>
 
