@@ -143,6 +143,15 @@ export class AdminController {
     return this.adminService.retryArticle(id)
   }
 
+  // 기사 기반 인스타그램 카드뉴스 HTML 슬라이드 2장 생성
+  @Post('articles/:id/card-news')
+  async generateCardNews(
+    @Param('id') id: string,
+    @Body('imageUrl') imageUrl?: string,
+  ) {
+    return this.adminService.generateCardNews(id, imageUrl)
+  }
+
   // ============================
   // 소스 관리
   // ============================

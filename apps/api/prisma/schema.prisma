@@ -49,14 +49,15 @@ model User {
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  posts             Post[]
-  comments          Comment[]
-  postLikes         PostLike[]
-  postRecommends    PostRecommend[]
-  commentRecommends CommentRecommend[]
-  newsRecommends    NewsRecommend[]
-  reports           Report[]
-  refreshTokens     RefreshToken[]
+  posts                Post[]
+  comments             Comment[]
+  postLikes            PostLike[]
+  postRecommends       PostRecommend[]
+  commentRecommends    CommentRecommend[]
+  newsRecommends       NewsRecommend[]
+  reports              Report[]
+  refreshTokens        RefreshToken[]
+  editorPickArticles   EditorPickArticle[]
 
   @@map("users")
 }
@@ -357,6 +358,30 @@ model SystemConfig {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("system_configs")
+}
+
+// ============================
+// 에디터 픽 아티클 (어드민 직접 작성)
+// ============================
+
+model EditorPickArticle {
+  id           String    @id @default(cuid())
+  title        String
+  content      String    @db.Text
+  mainCategory String    @map("main_category")
+  thumbnailUrl String    @map("thumbnail_url")
+
+  authorId     String    @map("author_id")
+  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  isHidden     Boolean   @default(false) @map("is_hidden")
+  deletedAt    DateTime? @map("deleted_at")
+
+  @@index([createdAt(sort: Desc)])
+  @@index([authorId])
+  @@map("editor_pick_articles")
 }
 
 // ============================

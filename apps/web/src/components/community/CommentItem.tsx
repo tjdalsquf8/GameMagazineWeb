@@ -6,6 +6,7 @@
 // 추천 버튼은 Optimistic Update 적용 — API 실패 시 롤백
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { useToastStore } from '@/store/toastStore'
 import { deleteComment, updateComment, toggleCommentRecommend } from '@/lib/api/posts'
@@ -118,7 +119,18 @@ function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted }: Rep
     <div className="pl-6 border-l-2 border-border mt-3">
       <div className="flex items-center gap-2 mb-1">
         {!isDeleted && reply.author && (
-          <span className="text-sm font-medium text-text-primary">{reply.author.nickname}</span>
+          <>
+            {reply.author.profileImage ? (
+              <div className="relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
+                <Image src={reply.author.profileImage} alt={reply.author.nickname} fill className="object-cover" sizes="20px" />
+              </div>
+            ) : (
+              <div className="w-5 h-5 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center flex-shrink-0">
+                <span className="text-[9px] font-medium text-[var(--color-text-muted)]">{reply.author.nickname[0]?.toUpperCase()}</span>
+              </div>
+            )}
+            <span className="text-sm font-medium text-text-primary">{reply.author.nickname}</span>
+          </>
         )}
         <span className="text-xs text-text-muted">{formatDate(reply.createdAt)}</span>
         {isOwn && !isEditing && (
@@ -293,7 +305,18 @@ export default function CommentItem({
     <div className="py-4 border-b border-border last:border-b-0">
       <div className="flex items-center gap-2 mb-1">
         {!isDeleted && comment.author && (
-          <span className="text-sm font-medium text-text-primary">{comment.author.nickname}</span>
+          <>
+            {comment.author.profileImage ? (
+              <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
+                <Image src={comment.author.profileImage} alt={comment.author.nickname} fill className="object-cover" sizes="24px" />
+              </div>
+            ) : (
+              <div className="w-6 h-6 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center flex-shrink-0">
+                <span className="text-[10px] font-medium text-[var(--color-text-muted)]">{comment.author.nickname[0]?.toUpperCase()}</span>
+              </div>
+            )}
+            <span className="text-sm font-medium text-text-primary">{comment.author.nickname}</span>
+          </>
         )}
         <span className="text-xs text-text-muted">{formatDate(comment.createdAt)}</span>
         {isOwn && !isEditing && (

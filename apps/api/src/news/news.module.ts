@@ -12,5 +12,6 @@ import { NewsScheduler } from './news.scheduler'
   imports: [ScheduleModule.forRoot(), PrismaModule],
   controllers: [NewsController],
   providers: [NewsService, NewsScheduler],
+  exports: [NewsService],
 })
 export class NewsModule {}
