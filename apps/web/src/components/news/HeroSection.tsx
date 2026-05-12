@@ -1,7 +1,7 @@
 // Hero 섹션 묶음 컴포넌트 — HeroMain + HeroSideCard를 조합
 // 자동 순환 상태 관리 및 사이드카드 클릭 처리 담당 (Client Component)
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { CategorySlug, SideNews } from '@/lib/mock/news'
 import { mockHeroNewsByCategory } from '@/lib/mock/news'
 import { HeroMain } from './HeroMain'
@@ -24,6 +24,8 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
   const [selectedNews, setSelectedNews] = useState<SideNews | null>(null)
   // 페이드 전환 트리거
   const [isFading, setIsFading] = useState(false)
+  // 수동 오버라이드 복귀 타이머 ref (중복 타이머 방지)
+  const manualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const categoryData = mockHeroNewsByCategory[activeCategory]
 
@@ -63,6 +65,15 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
     }, 300)
   }, [])
 
+  // 수동 조작 후 10초 뒤 자동 순환 복귀 — 기존 타이머 취소 후 재설정
+  const startManualTimer = useCallback(() => {
+    if (manualTimerRef.current) clearTimeout(manualTimerRef.current)
+    manualTimerRef.current = setTimeout(() => {
+      setManualOverride(false)
+      setSelectedNews(null)
+    }, 10000)
+  }, [])
+
   // 자동 순환 타이머 — 전체 탭 + manualOverride false일 때만 동작
   useEffect(() => {
     if (activeCategory !== 'all' || manualOverride) return
@@ -93,13 +104,30 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
           if (idx !== -1) setCurrentAutoIndex(idx)
         }
       })
-      setTimeout(() => {
-        setManualOverride(false)
-        setSelectedNews(null)
-      }, 10000)
+      startManualTimer()
     },
-    [activeCategory, fadeTransition]
+    [activeCategory, fadeTransition, startManualTimer]
   )
+
+  // 이전 슬라이드 — 전체 탭에서만 동작
+  const handlePrev = useCallback(() => {
+    fadeTransition(() => {
+      setCurrentAutoIndex((prev) => (prev - 1 + AUTO_SLIDE_ORDER.length) % AUTO_SLIDE_ORDER.length)
+      setManualOverride(true)
+      setSelectedNews(null)
+    })
+    startManualTimer()
+  }, [fadeTransition, startManualTimer])
+
+  // 다음 슬라이드 — 전체 탭에서만 동작
+  const handleNext = useCallback(() => {
+    fadeTransition(() => {
+      setCurrentAutoIndex((prev) => (prev + 1) % AUTO_SLIDE_ORDER.length)
+      setManualOverride(true)
+      setSelectedNews(null)
+    })
+    startManualTimer()
+  }, [fadeTransition, startManualTimer])
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4">
@@ -109,6 +137,8 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
         activeCategory={activeCategory}
         autoIndex={currentAutoIndex}
         isFading={isFading}
+        onPrev={activeCategory === 'all' ? handlePrev : undefined}
+        onNext={activeCategory === 'all' ? handleNext : undefined}
       />
 
       {/* 우측 사이드카드 목록 (모바일에서는 숨김) */}

@@ -1,8 +1,8 @@
 // 뉴스 메인 클라이언트 컴포넌트 — 대분류/소분류 카테고리 필터 및 페이지네이션 상태를 관리하고
-// HeroSection, NewsGrid, Pagination, CommunityHotWidget을 조합하는 최상위 래퍼
+// HeroSection, NewsGrid, Pagination, 광고 배너를 조합하는 최상위 래퍼
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import type { CategorySlug, CommunityHot } from '@/lib/mock/news'
+import { useState, useCallback } from 'react'
+import type { CategorySlug } from '@/lib/mock/news'
 import type { MainCategoryValue } from '@/constants/categories'
 import type { NewsArticle, NewsListResponse } from '@/types/news'
 import { HeroSection } from './HeroSection'
@@ -14,8 +14,6 @@ import Pagination from '@/components/ui/Pagination'
 interface NewsMainClientProps {
   // SSR로 받은 초기 뉴스 데이터
   initialNews: NewsListResponse
-  // 커뮤니티 HOT — mock 유지
-  communityHot: CommunityHot[]
 }
 
 // 페이지당 뉴스 표시 개수
@@ -31,7 +29,7 @@ const API_TO_HERO_SLUG: Record<string, CategorySlug> = {
 }
 
 // 뉴스 메인 전체 레이아웃 컴포넌트
-export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProps) {
+export function NewsMainClient({ initialNews }: NewsMainClientProps) {
   // 대분류 카테고리 필터 상태 — API 파라미터 값 기준 ('' = 전체)
   const [activeCategory, setActiveCategory] = useState<MainCategoryValue>('')
   // 소분류 카테고리 필터 상태 — null = 소분류 전체
@@ -136,6 +134,14 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
         )}
         <NewsGrid news={news} />
       </section>
+
+      {/* 가로 광고 배너 — 페이지네이션 위 */}
+      <div className="mb-6">
+        <div className="flex items-center justify-center w-full rounded-lg border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] h-[180px]">
+          {/* 실제 광고 코드 삽입 위치 (728×180) */}
+          <p className="text-sm text-[var(--color-text-muted)]">광고 (728&times;180)</p>
+        </div>
+      </div>
 
       {/* 페이지네이션 */}
       <div className="mb-8">

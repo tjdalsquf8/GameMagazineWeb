@@ -2,7 +2,6 @@
 // SSR: 초기 뉴스 데이터를 서버에서 fetch (5분 revalidate)
 // 카테고리 상태는 Client Component(NewsMainClient)에서 관리
 import { NewsMainClient } from '@/components/news/NewsMainClient'
-import { mockCommunityHot } from '@/lib/mock/news'
 import type { NewsListResponse } from '@/types/news'
 
 // 초기 뉴스 데이터 서버 fetch 함수 — API 실패 시 빈 목록 반환
@@ -26,5 +25,5 @@ async function fetchInitialNews(): Promise<NewsListResponse> {
 export default async function HomePage() {
   const initialNews = await fetchInitialNews()
 
-  return <NewsMainClient initialNews={initialNews} communityHot={mockCommunityHot} />
+  return <NewsMainClient initialNews={initialNews} />
 }

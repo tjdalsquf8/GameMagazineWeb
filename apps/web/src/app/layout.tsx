@@ -6,6 +6,7 @@ import '@/styles/globals.css'
 import ToastContainer from '@/components/ui/ToastContainer'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import AuthProvider from '@/components/auth/AuthProvider'
 
 const pretendard = localFont({
   src: [
@@ -36,10 +37,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${pretendard.className} flex flex-col min-h-screen`}>
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <ToastContainer />
+        <AuthProvider>
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <ToastContainer />
+        </AuthProvider>
       </body>
     </html>
   )

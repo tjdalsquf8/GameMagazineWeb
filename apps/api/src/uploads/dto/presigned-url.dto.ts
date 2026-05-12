@@ -1,5 +1,5 @@
 // presigned URL 요청 DTO - 파일 정보 유효성 검증 담당
-import { IsIn, IsNumber, IsString, Max, Min } from 'class-validator'
+import { IsIn, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator'
 
 export class PresignedUrlDto {
   // 허용된 이미지 MIME 타입 검증 필드
@@ -12,4 +12,10 @@ export class PresignedUrlDto {
   @Min(1)
   @Max(10 * 1024 * 1024)
   fileSize!: number
+
+  // 업로드 대상 폴더 — 'posts' | 'profiles', 기본값 'posts'
+  @IsOptional()
+  @IsString()
+  @IsIn(['posts', 'profiles'])
+  folder?: string
 }

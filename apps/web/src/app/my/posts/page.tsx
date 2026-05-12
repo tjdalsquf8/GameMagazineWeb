@@ -58,7 +58,7 @@ export default function MyPostsPage() {
   const { data, isLoading, error, page, setPage } = useMyPosts(PAGE_LIMIT)
 
   return (
-    <div className="max-w-[960px] mx-auto px-6 py-8">
+    <div className="max-w-[960px] mx-auto px-4 md:px-6 py-6 md:py-8">
       {/* 뒤로가기 */}
       <Link
         href="/my"
