@@ -3,6 +3,7 @@
 
 import { Module } from '@nestjs/common'
 import { JwtModule } from '@nestjs/jwt'
+import { CacheModule } from '@nestjs/cache-manager'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { AdminController } from './admin.controller'
 import { AdminService } from './admin.service'
@@ -19,6 +20,8 @@ import { NewsModule } from '../news/news.module'
       }),
       inject: [ConfigService],
     }),
+    // CacheModule — AdminService의 CACHE_MANAGER 주입용
+    CacheModule.register(),
     // NewsModule — NewsService.runNewsPipeline() 접근용
     NewsModule,
   ],

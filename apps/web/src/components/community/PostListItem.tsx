@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Post } from '@/types/community'
 
 interface PostListItemProps {
@@ -45,7 +46,20 @@ export default function PostListItem({ post, index }: PostListItemProps) {
         </Link>
       </td>
       <td className="py-3 px-2 text-sm text-text-secondary text-center w-24 hidden md:table-cell">
-        {post.author?.nickname ?? '(탈퇴한 회원)'}
+        <div className="flex items-center justify-center gap-1.5">
+          {post.author?.profileImage ? (
+            <div className="relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
+              <Image src={post.author.profileImage} alt={post.author.nickname} fill className="object-cover" sizes="20px" />
+            </div>
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center flex-shrink-0">
+              <span className="text-[9px] font-medium text-[var(--color-text-muted)]">
+                {post.author?.nickname?.[0]?.toUpperCase() ?? '?'}
+              </span>
+            </div>
+          )}
+          <span>{post.author?.nickname ?? '(탈퇴한 회원)'}</span>
+        </div>
       </td>
       <td className="py-3 px-2 text-sm text-text-muted text-center w-20 hidden sm:table-cell">
         {formatDate(post.createdAt)}

@@ -169,3 +169,18 @@ export async function resolveReport(
   const backendAction = action === 'RESOLVED' ? 'resolve' : 'reject'
   return await apiClient.patch<{ message: string }>(`/api/admin/reports/${id}`, { action: backendAction })
 }
+
+// ─── 카드뉴스 ──────────────────────────────────────────────────────
+
+/** 카드뉴스 슬라이드 단일 아이템 타입 */
+export interface CardSlide {
+  html: string
+}
+
+/** 카드뉴스 생성 요청 — 기사 ID와 선택적 이미지 URL을 전달해 슬라이드 HTML 배열을 반환 */
+export async function generateCardNews(
+  articleId: string,
+  imageUrl?: string,
+): Promise<{ success: boolean; data?: { slides: string[] }; error?: { code: string; message: string } }> {
+  return apiClient.post(`/api/admin/articles/${articleId}/card-news`, { imageUrl })
+}

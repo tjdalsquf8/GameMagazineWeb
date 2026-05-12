@@ -6,9 +6,9 @@ import type { CategorySlug, CommunityHot } from '@/lib/mock/news'
 import type { MainCategoryValue } from '@/constants/categories'
 import type { NewsArticle, NewsListResponse } from '@/types/news'
 import { HeroSection } from './HeroSection'
+import { EditorPickSection } from './EditorPickSection'
 import { CategoryFilter } from './CategoryFilter'
 import { NewsGrid } from './NewsGrid'
-import { CommunityHotWidget } from './CommunityHotWidget'
 import Pagination from '@/components/ui/Pagination'
 
 interface NewsMainClientProps {
@@ -111,6 +111,11 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
         <HeroSection activeCategory={heroSlug} />
       </section>
 
+      {/* 에디터 픽 섹션 — 관리자 선정 뉴스/스폰서드 콘텐츠 노출 영역 */}
+      <section className="mb-10 md:mb-14">
+        <EditorPickSection />
+      </section>
+
       {/* 대분류 + 소분류 카테고리 필터 탭 */}
       <div className="mb-6">
         <CategoryFilter
@@ -133,7 +138,7 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
       </section>
 
       {/* 페이지네이션 */}
-      <div className="mb-10 md:mb-14">
+      <div className="mb-8">
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
@@ -141,26 +146,10 @@ export function NewsMainClient({ initialNews, communityHot }: NewsMainClientProp
         />
       </div>
 
-      {/* 광고 + 커뮤니티 HOT */}
-      <section>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* 광고 영역 (336x280) */}
-          <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] min-h-[280px]">
-            {/*
-              실제 광고 코드 삽입 위치
-              예: Google AdSense, 자체 광고 배너 등
-            */}
-            <div className="text-center text-[var(--color-text-muted)]">
-              <p className="text-sm">광고 영역 (336&times;280)</p>
-            </div>
-          </div>
-
-          {/* 커뮤니티 HOT — 모바일에서 숨김 */}
-          <div className="hidden md:block">
-            <CommunityHotWidget posts={communityHot} />
-          </div>
-        </div>
-      </section>
+      {/* 하단 가로 광고 배너 */}
+      <div className="flex items-center justify-center w-full rounded-lg border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] h-24 md:h-28">
+        <p className="text-sm text-[var(--color-text-muted)]">광고 영역 (728×90)</p>
+      </div>
     </div>
   )
 }

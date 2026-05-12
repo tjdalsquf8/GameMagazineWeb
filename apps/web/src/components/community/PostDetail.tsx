@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { getPost, deletePost, incrementPostView, togglePostRecommend } from '@/lib/api/posts'
 import { useAuth } from '@/hooks/useAuth'
@@ -194,7 +195,20 @@ export default function PostDetail({ postId }: PostDetailProps) {
       <h1 className="text-2xl font-bold text-text-primary leading-tight mb-3">{post.title}</h1>
 
       <div className="flex items-center gap-3 text-sm text-text-muted mb-4">
-        <span className="text-text-secondary font-medium">{post.author?.nickname ?? '(탈퇴한 회원)'}</span>
+        <div className="flex items-center gap-2">
+          {post.author?.profileImage ? (
+            <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
+              <Image src={post.author.profileImage} alt={post.author.nickname} fill className="object-cover" sizes="28px" />
+            </div>
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-medium text-[var(--color-text-muted)]">
+                {post.author?.nickname?.[0]?.toUpperCase() ?? '?'}
+              </span>
+            </div>
+          )}
+          <span className="text-text-secondary font-medium">{post.author?.nickname ?? '(탈퇴한 회원)'}</span>
+        </div>
         <span>{formatFullDate(post.createdAt)}</span>
         <span>조회 {post.viewCount.toLocaleString()}</span>
       </div>

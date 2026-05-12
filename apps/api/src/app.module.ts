@@ -11,6 +11,8 @@ import { UploadModule } from './uploads/upload.module'
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter'
 import { NewsModule } from './news/news.module'
 import { UsersModule } from './users/users.module'
+import { AdminModule } from './admin/admin.module'
+import { EditorPicksModule } from './editor-picks/editor-picks.module'
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { UsersModule } from './users/users.module'
     UploadModule,
     NewsModule,
     UsersModule,
+    AdminModule,
+    EditorPicksModule,
   ],
   providers: [
     {

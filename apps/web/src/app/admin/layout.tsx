@@ -17,6 +17,7 @@ import {
   Flag,
   ChevronRight,
   Circle,
+  PenLine,
 } from 'lucide-react'
 
 /** 사이드바 메뉴 아이템 타입 */
@@ -31,6 +32,7 @@ const NEWS_NAV_ITEMS: NavItem[] = [
   { label: '대시보드', href: '/admin/dashboard', icon: <LayoutDashboard size={16} /> },
   { label: '파이프라인', href: '/admin/pipeline', icon: <Workflow size={16} /> },
   { label: '기사 관리', href: '/admin/articles', icon: <FileText size={16} /> },
+  { label: '에디터 픽', href: '/admin/editor-picks', icon: <PenLine size={16} /> },
   { label: '소스 관리', href: '/admin/sources', icon: <Globe size={16} /> },
 ]
 

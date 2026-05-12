@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/admin.api'
 import type { AdminArticle, ArticleFilter, MainCategory, ArticleStatus } from '@/types/admin.types'
 import { Eye, EyeOff, RefreshCw, ChevronLeft, ChevronRight, LayoutTemplate, ChevronDown } from 'lucide-react'
+import CardNewsModal from '@/components/admin/CardNewsModal'
 
 // ─── 상수 ─────────────────────────────────────────────────────────
 
@@ -96,6 +97,8 @@ export default function AdminArticlesPage() {
   const [isLoading, setIsLoading] = useState(true)
   /** 원문 제목 컬럼 표시 여부 */
   const [showOriginalTitle, setShowOriginalTitle] = useState(false)
+  /** 카드뉴스 모달 대상 기사 — null이면 모달 닫힘 */
+  const [cardNewsArticle, setCardNewsArticle] = useState<{ id: string; title: string } | null>(null)
   const [filter, setFilter] = useState<ArticleFilter>({
     mainCategory: 'ALL',
     status: 'ALL',
@@ -361,7 +364,7 @@ return (
                       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); alert('준비 중') }}
+                          onClick={(e) => { e.stopPropagation(); setCardNewsArticle({ id: article.id, title: article.title }) }}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
                           title="카드뉴스 만들기"
                           aria-label="카드뉴스 만들기"
@@ -378,6 +381,15 @@ return (
           </div>
         )}
       </div>
+
+      {/* 카드뉴스 모달 */}
+      {cardNewsArticle && (
+        <CardNewsModal
+          articleId={cardNewsArticle.id}
+          articleTitle={cardNewsArticle.title}
+          onClose={() => setCardNewsArticle(null)}
+        />
+      )}
 
       {/* 페이지네이션 */}
       {!isLoading && total > 0 && (
