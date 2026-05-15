@@ -80,7 +80,7 @@ const CATEGORY_ORDER = ['PC', 'Console', 'Mobile', 'Esports', '기타']
 const ARTICLE_CATEGORY_TABS = ['ALL', 'PC', 'MOBILE', 'CONSOLE', 'ESPORTS', '기타'] as const
 
 /** 탭 타입 — MainCategory 전체 + 기타 */
-type ArticleCategoryTab = typeof ARTICLE_CATEGORY_TABS[number]
+type ArticleCategoryTab = (typeof ARTICLE_CATEGORY_TABS)[number]
 
 /** 탭 표시 라벨 */
 const ARTICLE_CATEGORY_TAB_LABELS: Record<ArticleCategoryTab, string> = {
@@ -109,22 +109,25 @@ export default function AdminDashboardPage() {
   const [isArticleLoading, setIsArticleLoading] = useState(false)
 
   /** 카테고리 탭별 기사 목록 로드 */
-  const loadArticles = useCallback(async (cat: ArticleCategoryTab) => {
-    setIsArticleLoading(true)
-    try {
-      const res = await fetchAdminArticles({
-        mainCategory: cat === 'ALL' ? undefined : (cat as MainCategory),
-        page: 1,
-        limit: 10,
-      })
-      if (res.success) setArticles(res.data.data)
-      else showToast('기사 목록을 불러오지 못했습니다.', 'error')
-    } catch {
-      showToast('기사 목록을 불러오지 못했습니다.', 'error')
-    } finally {
-      setIsArticleLoading(false)
-    }
-  }, [showToast])
+  const loadArticles = useCallback(
+    async (cat: ArticleCategoryTab) => {
+      setIsArticleLoading(true)
+      try {
+        const res = await fetchAdminArticles({
+          mainCategory: cat === 'ALL' ? undefined : (cat as MainCategory),
+          page: 1,
+          limit: 10,
+        })
+        if (res.success) setArticles(res.data.data)
+        else showToast('기사 목록을 불러오지 못했습니다.', 'error')
+      } catch {
+        showToast('기사 목록을 불러오지 못했습니다.', 'error')
+      } finally {
+        setIsArticleLoading(false)
+      }
+    },
+    [showToast]
+  )
 
   /** 초기 데이터 일괄 로드 */
   const loadData = useCallback(async () => {
@@ -427,7 +430,12 @@ export default function AdminDashboardPage() {
             ))}
           </div>
         </div>
-        <div className={['overflow-x-auto transition-opacity', isArticleLoading ? 'opacity-50' : ''].join(' ')}>
+        <div
+          className={[
+            'overflow-x-auto transition-opacity',
+            isArticleLoading ? 'opacity-50' : '',
+          ].join(' ')}
+        >
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)]">

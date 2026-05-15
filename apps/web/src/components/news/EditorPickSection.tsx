@@ -37,7 +37,6 @@ function EditorPickCard({ item }: { item: EditorPickItem & { href: string } }) {
         <h3 className="text-sm font-semibold leading-snug text-[var(--color-text-primary)] line-clamp-2 group-hover:text-[var(--color-primary)] transition-colors">
           {item.title}
         </h3>
-
       </div>
     </Link>
   )

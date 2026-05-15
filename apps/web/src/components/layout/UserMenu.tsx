@@ -5,6 +5,7 @@
 'use client'
 
 import { useRef, useState, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ChevronDown, User } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -80,7 +81,17 @@ export function UserMenu({ variant, onClose }: UserMenuProps) {
       <div className="flex flex-col">
         {/* 닉네임 표시 행 */}
         <div className="flex items-center gap-2 min-h-[48px] px-2 text-sm text-[var(--color-text-primary)] font-medium">
-          <User size={16} className="text-[var(--color-text-secondary)]" />
+          {user?.profileImage ? (
+            <Image
+              src={user.profileImage}
+              alt={user.nickname}
+              width={24}
+              height={24}
+              className="rounded-full object-cover w-6 h-6"
+            />
+          ) : (
+            <User size={16} className="text-[var(--color-text-secondary)]" />
+          )}
           <span>{user?.nickname}</span>
         </div>
         {/* 마이페이지 링크 */}
@@ -111,8 +122,21 @@ export function UserMenu({ variant, onClose }: UserMenuProps) {
       {/* 닉네임 + 드롭다운 토글 버튼 */}
       <button
         onClick={() => setIsOpen((prev) => !prev)}
-        className="flex items-center gap-1 px-3 py-2 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors text-sm"
+        className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[var(--color-surface-hover)] transition-colors text-sm"
       >
+        {user?.profileImage ? (
+          <Image
+            src={user.profileImage}
+            alt={user.nickname}
+            width={28}
+            height={28}
+            className="rounded-full object-cover w-7 h-7"
+          />
+        ) : (
+          <div className="w-7 h-7 rounded-full bg-[var(--color-surface)] border border-[var(--color-border)] flex items-center justify-center">
+            <User size={14} className="text-[var(--color-text-secondary)]" />
+          </div>
+        )}
         <span className="text-[var(--color-text-primary)]">{user?.nickname}</span>
         <ChevronDown
           size={16}

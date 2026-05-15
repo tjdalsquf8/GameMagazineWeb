@@ -37,7 +37,14 @@ function formatViewCount(count: number): string {
 }
 
 // Hero 메인 뷰어 컴포넌트
-export function HeroMain({ news, activeCategory, autoIndex, isFading, onPrev, onNext }: HeroMainProps) {
+export function HeroMain({
+  news,
+  activeCategory,
+  autoIndex,
+  isFading,
+  onPrev,
+  onNext,
+}: HeroMainProps) {
   return (
     <div className="relative w-full">
       {/* 이미지 영역 */}
@@ -80,7 +87,11 @@ export function HeroMain({ news, activeCategory, autoIndex, isFading, onPrev, on
           {/* 좌우 이동 버튼 — 전체 탭에서만 표시 */}
           {onPrev && (
             <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onPrev() }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onPrev()
+              }}
               className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/65 text-white rounded-full p-2 transition-colors"
               aria-label="이전 슬라이드"
             >
@@ -89,7 +100,11 @@ export function HeroMain({ news, activeCategory, autoIndex, isFading, onPrev, on
           )}
           {onNext && (
             <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onNext() }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onNext()
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/65 text-white rounded-full p-2 transition-colors"
               aria-label="다음 슬라이드"
             >

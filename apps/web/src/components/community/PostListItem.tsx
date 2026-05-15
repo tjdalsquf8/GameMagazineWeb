@@ -49,7 +49,13 @@ export default function PostListItem({ post, index }: PostListItemProps) {
         <div className="flex items-center justify-center gap-1.5">
           {post.author?.profileImage ? (
             <div className="relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
-              <Image src={post.author.profileImage} alt={post.author.nickname} fill className="object-cover" sizes="20px" />
+              <Image
+                src={post.author.profileImage}
+                alt={post.author.nickname}
+                fill
+                className="object-cover"
+                sizes="20px"
+              />
             </div>
           ) : (
             <div className="w-5 h-5 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center flex-shrink-0">

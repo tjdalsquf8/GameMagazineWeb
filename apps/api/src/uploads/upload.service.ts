@@ -1,5 +1,6 @@
 // 이미지 업로드 서비스 - Cloudflare R2 presigned URL 생성 로직 담당
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { randomUUID } from 'crypto'
@@ -24,15 +25,16 @@ export class UploadService {
   private readonly logger = new Logger(UploadService.name)
   private readonly s3Client: S3Client
 
-  constructor() {
-    const accountId = process.env.R2_ACCOUNT_ID
+  // ConfigService를 통해 R2 자격증명을 주입받아 S3 클라이언트 초기화
+  constructor(private readonly config: ConfigService) {
+    const accountId = this.config.getOrThrow<string>('R2_ACCOUNT_ID')
     // R2 S3 호환 클라이언트 초기화
     this.s3Client = new S3Client({
       region: 'auto',
       endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+        accessKeyId: this.config.getOrThrow<string>('R2_ACCESS_KEY_ID'),
+        secretAccessKey: this.config.getOrThrow<string>('R2_SECRET_ACCESS_KEY'),
       },
     })
   }
@@ -52,8 +54,8 @@ export class UploadService {
     const ext = MIME_TO_EXT[dto.contentType]
     const folder = dto.folder ?? 'posts'
     const key = `${folder}/${userId}/${randomUUID()}.${ext}`
-    const bucket = process.env.R2_BUCKET_NAME!
-    const publicUrl = `${process.env.R2_PUBLIC_URL}/${key}`
+    const bucket = this.config.getOrThrow<string>('R2_BUCKET_NAME')
+    const publicUrl = `${this.config.getOrThrow<string>('R2_PUBLIC_URL')}/${key}`
 
     // PutObject 커맨드로 presigned URL 생성 (유효시간 5분)
     const command = new PutObjectCommand({
