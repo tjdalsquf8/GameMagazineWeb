@@ -15,14 +15,19 @@ const RSS_GROUPS: {
   label: string
   filter: (s: AdminSource) => boolean
 }[] = [
-  { key: 'domestic', label: '국내',    filter: (s) => s.language === 'KO' },
-  { key: 'console',  label: 'Console', filter: (s) => s.platform === 'PlayStation' || s.platform === 'Xbox' || s.platform === 'Nintendo' },
-  { key: 'etc',      label: '기타',    filter: (s) => s.language !== 'KO' && !s.platform },
+  { key: 'domestic', label: '국내', filter: (s) => s.language === 'KO' },
+  {
+    key: 'console',
+    label: 'Console',
+    filter: (s) =>
+      s.platform === 'PlayStation' || s.platform === 'Xbox' || s.platform === 'Nintendo',
+  },
+  { key: 'etc', label: '기타', filter: (s) => s.language !== 'KO' && !s.platform },
 ]
 
 /** 소스별 담당 카테고리 표시 (DB에 없는 메타 정보 — platform이 없는 소스용) */
 const SOURCE_CATEGORIES: Record<string, string[]> = {
-  '게임메카': ['PC', 'Mobile'],
+  게임메카: ['PC', 'Mobile'],
 }
 
 /** API 소스 정의 (RSS가 아닌 직접 API 연동 소스) */
@@ -149,10 +154,13 @@ export default function AdminSourcesPage() {
               </span>
             </h3>
             {/* Console은 가로 한 줄로, 나머지는 그리드 */}
-            <div className={group.key === 'console'
-              ? 'flex flex-wrap gap-4'
-              : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'
-            }>
+            <div
+              className={
+                group.key === 'console'
+                  ? 'flex flex-wrap gap-4'
+                  : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'
+              }
+            >
               {group.items.map((source) => (
                 <SourceCard
                   key={source.id}
@@ -183,7 +191,9 @@ export default function AdminSourcesPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{src.name}</p>
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    {src.name}
+                  </p>
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
                     {src.category}
                   </span>

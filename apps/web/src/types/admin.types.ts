@@ -55,7 +55,7 @@ export interface AdminSource {
   name: string
   url: string
   language: SourceLanguage
-  platform: string | null   // PlayStation / Xbox / Nintendo / null
+  platform: string | null // PlayStation / Xbox / Nintendo / null
   isActive: boolean
   lastCollectedAt: string | null
   totalCollected: number

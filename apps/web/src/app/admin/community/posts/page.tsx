@@ -207,7 +207,10 @@ export default function AdminCommunityPostsPage() {
 
         <div className="flex gap-2 flex-1 min-w-[200px]">
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]" />
+            <Search
+              size={14}
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)]"
+            />
             <input
               type="text"
               placeholder="제목 또는 작성자 검색"
@@ -240,14 +243,30 @@ export default function AdminCommunityPostsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-12">#</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)]">제목</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-24">작성자</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-28">카테고리</th>
-                  <th className="px-4 py-3 text-right font-medium text-[var(--color-text-muted)] w-16">조회</th>
-                  <th className="px-4 py-3 text-right font-medium text-[var(--color-text-muted)] w-16">댓글</th>
-                  <th className="px-4 py-3 text-center font-medium text-[var(--color-text-muted)] w-16">상태</th>
-                  <th className="px-4 py-3 text-center font-medium text-[var(--color-text-muted)] w-20">작업</th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-12">
+                    #
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)]">
+                    제목
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-24">
+                    작성자
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-28">
+                    카테고리
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium text-[var(--color-text-muted)] w-16">
+                    조회
+                  </th>
+                  <th className="px-4 py-3 text-right font-medium text-[var(--color-text-muted)] w-16">
+                    댓글
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-[var(--color-text-muted)] w-16">
+                    상태
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-[var(--color-text-muted)] w-20">
+                    작업
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
@@ -264,19 +283,29 @@ export default function AdminCommunityPostsPage() {
                     <td className="px-4 py-3 text-[var(--color-text-primary)] max-w-xs truncate">
                       {post.title}
                     </td>
-                    <td className="px-4 py-3 text-[var(--color-text-secondary)]">{post.authorNickname}</td>
+                    <td className="px-4 py-3 text-[var(--color-text-secondary)]">
+                      {post.authorNickname}
+                    </td>
                     <td className="px-4 py-3 max-w-[120px]">
                       <span className="inline-block px-2 py-0.5 text-xs rounded-full bg-[var(--color-surface)] text-[var(--color-text-muted)] border border-[var(--color-border)] whitespace-nowrap overflow-hidden text-ellipsis max-w-full">
                         {post.categoryName}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right text-[var(--color-text-muted)]">{post.viewCount.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-right text-[var(--color-text-muted)]">{post.commentCount}</td>
+                    <td className="px-4 py-3 text-right text-[var(--color-text-muted)]">
+                      {post.viewCount.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right text-[var(--color-text-muted)]">
+                      {post.commentCount}
+                    </td>
                     <td className="px-4 py-3 text-center">
                       {post.isDeleted ? (
-                        <span className="text-xs font-medium text-red-500 dark:text-red-400">삭제됨</span>
+                        <span className="text-xs font-medium text-red-500 dark:text-red-400">
+                          삭제됨
+                        </span>
                       ) : (
-                        <span className="text-xs font-medium text-green-600 dark:text-green-400">정상</span>
+                        <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                          정상
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
@@ -316,7 +345,8 @@ export default function AdminCommunityPostsPage() {
       {!isLoading && total > 0 && (
         <div className="flex items-center justify-between text-sm">
           <p className="text-xs text-[var(--color-text-muted)]">
-            {(page - 1) * PAGE_LIMIT + 1}–{Math.min(page * PAGE_LIMIT, total)} / 총 {total.toLocaleString()}건
+            {(page - 1) * PAGE_LIMIT + 1}–{Math.min(page * PAGE_LIMIT, total)} / 총{' '}
+            {total.toLocaleString()}건
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -328,13 +358,14 @@ export default function AdminCommunityPostsPage() {
               <ChevronLeft size={16} />
             </button>
             {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-              const p = totalPages <= 7
-                ? i + 1
-                : page <= 4
+              const p =
+                totalPages <= 7
                   ? i + 1
-                  : page >= totalPages - 3
-                    ? totalPages - 6 + i
-                    : page - 3 + i
+                  : page <= 4
+                    ? i + 1
+                    : page >= totalPages - 3
+                      ? totalPages - 6 + i
+                      : page - 3 + i
               return (
                 <button
                   key={p}

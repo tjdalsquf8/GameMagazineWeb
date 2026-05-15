@@ -16,6 +16,7 @@ import { NewsService } from './news.service'
 import { NewsListQueryDto } from './dto/news-list-query.dto'
 import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto } from './dto/news-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
+import { AdminGuard } from '../admin/guards/admin.guard'
 
 @Controller('news')
 export class NewsController {
@@ -35,8 +36,9 @@ export class NewsController {
   }
 
   // POST /news/pipeline/run
-  // 뉴스 파이프라인 수동 실행 (개발 편의용)
+  // 뉴스 파이프라인 수동 실행 (어드민 전용 — AdminGuard로 JWT + ADMIN 역할 검증)
   @Post('pipeline/run')
+  @UseGuards(AdminGuard)
   @HttpCode(HttpStatus.OK)
   async runPipeline(): Promise<{
     success: true

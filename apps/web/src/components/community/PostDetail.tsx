@@ -100,7 +100,8 @@ export default function PostDetail({ postId }: PostDetailProps) {
       : null
   // ---------------------------------------
 
-  const isOwnPost = user !== null && post !== null && post.author !== null && user.id === post.author.id
+  const isOwnPost =
+    user !== null && post !== null && post.author !== null && user.id === post.author.id
 
   /** 게시글 삭제 처리 */
   const handleDelete = async () => {
@@ -196,7 +197,13 @@ export default function PostDetail({ postId }: PostDetailProps) {
         <div className="flex items-center gap-2">
           {post.author?.profileImage ? (
             <div className="relative w-7 h-7 rounded-full overflow-hidden flex-shrink-0">
-              <Image src={post.author.profileImage} alt={post.author.nickname} fill className="object-cover" sizes="28px" />
+              <Image
+                src={post.author.profileImage}
+                alt={post.author.nickname}
+                fill
+                className="object-cover"
+                sizes="28px"
+              />
             </div>
           ) : (
             <div className="w-7 h-7 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center flex-shrink-0">
@@ -205,7 +212,9 @@ export default function PostDetail({ postId }: PostDetailProps) {
               </span>
             </div>
           )}
-          <span className="text-text-secondary font-medium">{post.author?.nickname ?? '(탈퇴한 회원)'}</span>
+          <span className="text-text-secondary font-medium">
+            {post.author?.nickname ?? '(탈퇴한 회원)'}
+          </span>
         </div>
         <span>{formatFullDate(post.createdAt)}</span>
         <span>조회 {post.viewCount.toLocaleString()}</span>

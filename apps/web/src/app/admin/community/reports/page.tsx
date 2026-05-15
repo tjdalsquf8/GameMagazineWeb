@@ -21,9 +21,18 @@ const STATUS_FILTER_OPTIONS: { key: ReportStatus | 'ALL'; label: string }[] = [
 
 /** 신고 상태 배지 스타일 */
 const STATUS_BADGE: Record<ReportStatus, { label: string; className: string }> = {
-  PENDING: { label: '대기', className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
-  RESOLVED: { label: '처리됨', className: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
-  DISMISSED: { label: '기각', className: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
+  PENDING: {
+    label: '대기',
+    className: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+  },
+  RESOLVED: {
+    label: '처리됨',
+    className: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+  },
+  DISMISSED: {
+    label: '기각',
+    className: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400',
+  },
 }
 
 /** 신고 관리 페이지 컴포넌트 */
@@ -72,9 +81,7 @@ export default function AdminCommunityReportsPage() {
     const res = await resolveReport(id, action)
     if (res.success) {
       showToast(res.data.message, 'success')
-      setReports((prev) =>
-        prev.map((r) => (r.id === id ? { ...r, status: action } : r))
-      )
+      setReports((prev) => prev.map((r) => (r.id === id ? { ...r, status: action } : r)))
     } else {
       showToast('처리에 실패했습니다.', 'error')
     }
@@ -133,13 +140,27 @@ export default function AdminCommunityReportsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]">
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-16">대상</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)]">내용 미리보기</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-24">신고자</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-28">사유</th>
-                  <th className="px-4 py-3 text-center font-medium text-[var(--color-text-muted)] w-20">상태</th>
-                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-36">신고 일시</th>
-                  <th className="px-4 py-3 text-center font-medium text-[var(--color-text-muted)] w-24">작업</th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-16">
+                    대상
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)]">
+                    내용 미리보기
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-24">
+                    신고자
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-28">
+                    사유
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-[var(--color-text-muted)] w-20">
+                    상태
+                  </th>
+                  <th className="px-4 py-3 text-left font-medium text-[var(--color-text-muted)] w-36">
+                    신고 일시
+                  </th>
+                  <th className="px-4 py-3 text-center font-medium text-[var(--color-text-muted)] w-24">
+                    작업
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--color-border)]">
@@ -205,7 +226,9 @@ export default function AdminCommunityReportsPage() {
                           </button>
                         </div>
                       ) : (
-                        <span className="block text-center text-xs text-[var(--color-text-muted)]">—</span>
+                        <span className="block text-center text-xs text-[var(--color-text-muted)]">
+                          —
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -220,7 +243,8 @@ export default function AdminCommunityReportsPage() {
       {!isLoading && total > 0 && (
         <div className="flex items-center justify-between text-sm">
           <p className="text-xs text-[var(--color-text-muted)]">
-            {(page - 1) * PAGE_LIMIT + 1}–{Math.min(page * PAGE_LIMIT, total)} / 총 {total.toLocaleString()}건
+            {(page - 1) * PAGE_LIMIT + 1}–{Math.min(page * PAGE_LIMIT, total)} / 총{' '}
+            {total.toLocaleString()}건
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -232,13 +256,14 @@ export default function AdminCommunityReportsPage() {
               <ChevronLeft size={16} />
             </button>
             {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-              const p = totalPages <= 7
-                ? i + 1
-                : page <= 4
+              const p =
+                totalPages <= 7
                   ? i + 1
-                  : page >= totalPages - 3
-                    ? totalPages - 6 + i
-                    : page - 3 + i
+                  : page <= 4
+                    ? i + 1
+                    : page >= totalPages - 3
+                      ? totalPages - 6 + i
+                      : page - 3 + i
               return (
                 <button
                   key={p}

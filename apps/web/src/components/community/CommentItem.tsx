@@ -122,11 +122,19 @@ function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted }: Rep
           <>
             {reply.author.profileImage ? (
               <div className="relative w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
-                <Image src={reply.author.profileImage} alt={reply.author.nickname} fill className="object-cover" sizes="20px" />
+                <Image
+                  src={reply.author.profileImage}
+                  alt={reply.author.nickname}
+                  fill
+                  className="object-cover"
+                  sizes="20px"
+                />
               </div>
             ) : (
               <div className="w-5 h-5 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center flex-shrink-0">
-                <span className="text-[9px] font-medium text-[var(--color-text-muted)]">{reply.author.nickname[0]?.toUpperCase()}</span>
+                <span className="text-[9px] font-medium text-[var(--color-text-muted)]">
+                  {reply.author.nickname[0]?.toUpperCase()}
+                </span>
               </div>
             )}
             <span className="text-sm font-medium text-text-primary">{reply.author.nickname}</span>
@@ -308,11 +316,19 @@ export default function CommentItem({
           <>
             {comment.author.profileImage ? (
               <div className="relative w-6 h-6 rounded-full overflow-hidden flex-shrink-0">
-                <Image src={comment.author.profileImage} alt={comment.author.nickname} fill className="object-cover" sizes="24px" />
+                <Image
+                  src={comment.author.profileImage}
+                  alt={comment.author.nickname}
+                  fill
+                  className="object-cover"
+                  sizes="24px"
+                />
               </div>
             ) : (
               <div className="w-6 h-6 rounded-full bg-[var(--color-surface-hover)] flex items-center justify-center flex-shrink-0">
-                <span className="text-[10px] font-medium text-[var(--color-text-muted)]">{comment.author.nickname[0]?.toUpperCase()}</span>
+                <span className="text-[10px] font-medium text-[var(--color-text-muted)]">
+                  {comment.author.nickname[0]?.toUpperCase()}
+                </span>
               </div>
             )}
             <span className="text-sm font-medium text-text-primary">{comment.author.nickname}</span>

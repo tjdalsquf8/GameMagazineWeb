@@ -149,7 +149,9 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
               <p className="text-sm text-[var(--color-text-secondary)] text-center">
                 Claude가 카드뉴스를 작성 중입니다...
                 <br />
-                <span className="text-xs text-[var(--color-text-muted)]">잠시만 기다려 주세요.</span>
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  잠시만 기다려 주세요.
+                </span>
               </p>
             </div>
           )}
@@ -160,7 +162,9 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
               <p className="text-sm text-red-500 text-center">
                 카드뉴스 생성에 실패했습니다.
                 <br />
-                <span className="text-xs text-[var(--color-text-muted)]">잠시 후 다시 시도해 주세요.</span>
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  잠시 후 다시 시도해 주세요.
+                </span>
               </p>
               <button
                 type="button"
@@ -191,17 +195,29 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
 
                 {/* 슬라이드 렌더링 영역 */}
                 <div
-                  style={{ width: 378, height: 473, overflow: 'hidden', position: 'relative', flexShrink: 0 }}
+                  style={{
+                    width: 378,
+                    height: 473,
+                    overflow: 'hidden',
+                    position: 'relative',
+                    flexShrink: 0,
+                  }}
                   className="rounded-lg border border-[var(--color-border)] bg-gray-50 dark:bg-gray-800"
                 >
                   {slides.map((slide, i) => (
-                    <div
-                      key={i}
-                      style={{ display: i === currentIndex ? 'block' : 'none' }}
-                    >
-                      <div style={{ transform: 'scale(0.35)', transformOrigin: 'top left', width: 1080, height: 1350 }}>
+                    <div key={i} style={{ display: i === currentIndex ? 'block' : 'none' }}>
+                      <div
+                        style={{
+                          transform: 'scale(0.35)',
+                          transformOrigin: 'top left',
+                          width: 1080,
+                          height: 1350,
+                        }}
+                      >
                         <CardNewsSlide
-                          ref={(el) => { slideRefs.current[i] = el }}
+                          ref={(el) => {
+                            slideRefs.current[i] = el
+                          }}
                           html={slide}
                           slideNo={i + 1}
                           total={slides.length}

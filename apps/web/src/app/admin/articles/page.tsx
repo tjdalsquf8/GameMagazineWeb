@@ -12,7 +12,15 @@ import {
   showArticle,
 } from '@/lib/api/admin.api'
 import type { AdminArticle, ArticleFilter, MainCategory, ArticleStatus } from '@/types/admin.types'
-import { Eye, EyeOff, RefreshCw, ChevronLeft, ChevronRight, LayoutTemplate, ChevronDown } from 'lucide-react'
+import {
+  Eye,
+  EyeOff,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  LayoutTemplate,
+  ChevronDown,
+} from 'lucide-react'
 import CardNewsModal from '@/components/admin/CardNewsModal'
 
 // ─── 상수 ─────────────────────────────────────────────────────────
@@ -149,7 +157,7 @@ export default function AdminArticlesPage() {
     setFilter((prev) => ({ ...prev, sourceName, page: 1 }))
   }
 
-/** 페이지 변경 */
+  /** 페이지 변경 */
   const handlePageChange = (page: number) => {
     setFilter((prev) => ({ ...prev, page }))
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -171,7 +179,7 @@ export default function AdminArticlesPage() {
     }
   }
 
-return (
+  return (
     <div className="space-y-5">
       {/* 페이지 헤더 */}
       <h1 className="text-xl font-bold text-[var(--color-text-primary)]">기사 관리</h1>
@@ -248,12 +256,17 @@ return (
                         title={showOriginalTitle ? '원문 제목 숨기기' : '원문 제목 표시'}
                       >
                         원문
-                        <ChevronDown size={10} className={`opacity-60 transition-transform ${showOriginalTitle ? 'rotate-180' : ''}`} />
+                        <ChevronDown
+                          size={10}
+                          className={`opacity-60 transition-transform ${showOriginalTitle ? 'rotate-180' : ''}`}
+                        />
                       </button>
                     </span>
                   </th>
                   {/* 원문 제목 — th/td 모두 항상 DOM에 유지, CSS hidden으로 함께 숨김 */}
-                  <th className={`text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap ${showOriginalTitle ? '' : 'hidden'}`}>
+                  <th
+                    className={`text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap ${showOriginalTitle ? '' : 'hidden'}`}
+                  >
                     원문 제목
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap">
@@ -301,7 +314,9 @@ return (
                         {article.title}
                       </td>
                       {/* 원문 제목 — td는 항상 DOM에 유지, CSS로만 숨김 (조건부 렌더링 금지) */}
-                      <td className={`px-4 py-3 max-w-[160px] truncate text-[var(--color-text-muted)] text-xs ${showOriginalTitle ? '' : 'hidden'}`}>
+                      <td
+                        className={`px-4 py-3 max-w-[160px] truncate text-[var(--color-text-muted)] text-xs ${showOriginalTitle ? '' : 'hidden'}`}
+                      >
                         {article.originalTitle}
                       </td>
                       {/* 카테고리 */}
@@ -346,7 +361,10 @@ return (
                           {(article.status === 'PUBLISHED' || article.status === 'HIDDEN') && (
                             <button
                               type="button"
-                              onClick={(e) => { e.stopPropagation(); handleVisibilityToggle(article) }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleVisibilityToggle(article)
+                              }}
                               className="p-1.5 rounded-md hover:bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text-primary)] transition-colors"
                               aria-label={article.status === 'HIDDEN' ? '기사 공개' : '기사 숨기기'}
                               title={article.status === 'HIDDEN' ? '공개' : '숨기기'}
@@ -364,7 +382,10 @@ return (
                       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); setCardNewsArticle({ id: article.id, title: article.title }) }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCardNewsArticle({ id: article.id, title: article.title })
+                          }}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
                           title="카드뉴스 만들기"
                           aria-label="카드뉴스 만들기"
@@ -395,7 +416,8 @@ return (
       {!isLoading && total > 0 && (
         <div className="flex items-center justify-between text-sm">
           <p className="text-xs text-[var(--color-text-muted)]">
-            {(filter.page - 1) * filter.limit + 1}–{Math.min(filter.page * filter.limit, total)} / 총 {total.toLocaleString()}건
+            {(filter.page - 1) * filter.limit + 1}–{Math.min(filter.page * filter.limit, total)} /
+            총 {total.toLocaleString()}건
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -407,13 +429,14 @@ return (
               <ChevronLeft size={16} />
             </button>
             {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-              const page = totalPages <= 7
-                ? i + 1
-                : filter.page <= 4
+              const page =
+                totalPages <= 7
                   ? i + 1
-                  : filter.page >= totalPages - 3
-                    ? totalPages - 6 + i
-                    : filter.page - 3 + i
+                  : filter.page <= 4
+                    ? i + 1
+                    : filter.page >= totalPages - 3
+                      ? totalPages - 6 + i
+                      : filter.page - 3 + i
               return (
                 <button
                   key={page}

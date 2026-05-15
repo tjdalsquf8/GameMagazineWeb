@@ -10,17 +10,15 @@ interface CardNewsSlideProps {
 }
 
 /** html2canvas 캡처를 위해 forwardRef 사용, 실제 1080×1350 크기로 렌더링 */
-const CardNewsSlide = forwardRef<HTMLDivElement, CardNewsSlideProps>(
-  ({ html }, ref) => {
-    return (
-      <div
-        ref={ref}
-        style={{ width: 1080, height: 1350, overflow: 'hidden', position: 'relative' }}
-        dangerouslySetInnerHTML={{ __html: html }}
-      />
-    )
-  }
-)
+const CardNewsSlide = forwardRef<HTMLDivElement, CardNewsSlideProps>(({ html }, ref) => {
+  return (
+    <div
+      ref={ref}
+      style={{ width: 1080, height: 1350, overflow: 'hidden', position: 'relative' }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  )
+})
 CardNewsSlide.displayName = 'CardNewsSlide'
 
 export default CardNewsSlide

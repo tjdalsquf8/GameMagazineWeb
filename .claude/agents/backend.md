@@ -184,6 +184,98 @@ export const ERROR_CODES = {
 } as const
 ```
 
+## 운영 환경 대비 필수 규칙
+
+**모든 코드는 실제 운영 중 발생할 수 있는 모든 상황을 고려해 작성한다.**  
+아래 규칙은 선택이 아니라 구현의 일부다. 누락 시 구현 미완성으로 간주.
+
+### 예외 처리 — 모든 서비스 메서드 필수
+
+```typescript
+// ✅ 필수 패턴: Prisma 에러 → 도메인 HttpException 변환
+async findPost(id: number): Promise<Post> {
+  try {
+    const post = await this.prisma.post.findUnique({ where: { id } })
+    if (!post) throw new NotFoundException({ code: ERROR_CODES.POST_NOT_FOUND, message: '게시글을 찾을 수 없습니다' })
+    return post
+  } catch (e) {
+    if (e instanceof HttpException) throw e
+    this.logger.error('findPost failed', e)
+    throw new InternalServerErrorException({ code: 'INTERNAL_001', message: '서버 오류가 발생했습니다' })
+  }
+}
+```
+
+- Prisma `P2025` (레코드 없음) → `NotFoundException`
+- Prisma `P2002` (유니크 제약) → `ConflictException`
+- 외부 API 호출(Claude, R2 등) → try/catch 필수, 외부 에러 메시지 클라이언트에 직접 노출 금지
+- `catch (e)` 절에서 `HttpException`은 다시 throw, 나머지만 `InternalServerErrorException`으로 변환
+
+### 입력값 검증 — DTO 작성 시 필수 데코레이터
+
+```typescript
+// 문자열 필드
+@IsString()
+@IsNotEmpty()
+@MaxLength(200)   // 항상 상한 설정
+title: string
+
+// 숫자 쿼리 파라미터
+@IsOptional()
+@Type(() => Number)
+@IsInt()
+@Min(1)
+@Max(100)         // 페이지네이션 limit 반드시 Max 설정
+limit?: number = 20
+
+// 본문 HTML 콘텐츠
+@IsString()
+@MaxLength(100000)
+content: string
+```
+
+### 환경변수 — process.env 직접 접근 금지
+
+```typescript
+// ❌ 금지
+const secret = process.env.JWT_SECRET
+
+// ✅ 필수: ConfigService 사용, 없으면 앱 시작 시 에러
+constructor(private config: ConfigService) {}
+const secret = this.config.getOrThrow<string>('JWT_SECRET')
+```
+
+- 모든 환경변수는 `ConfigService.getOrThrow()` 사용
+- `!` 강제 단언 금지 (`process.env.R2_KEY!`)
+
+### 인증/인가 — 엔드포인트 작성 시 체크리스트
+
+- 공개 API가 아닌 모든 엔드포인트: `@UseGuards(JwtAuthGuard)` 필수
+- 어드민 전용 API: `@UseGuards(JwtAuthGuard, AdminGuard)` 필수
+- 리소스 소유권 검사 필요 시 서비스 레이어에서 `authorId === userId` 확인
+- 파이프라인/배치/크론 트리거 엔드포인트는 반드시 어드민 가드 적용
+
+### 로깅 — NestJS Logger 활용
+
+```typescript
+private readonly logger = new Logger(PostsService.name)
+
+// 에러 로그: catch 블록 내 항상 기록
+this.logger.error(`findPost(${id}) failed`, e instanceof Error ? e.stack : e)
+
+// 주요 비즈니스 이벤트 (생성/삭제/배치 실행 등)
+this.logger.log(`Post created: id=${post.id} by userId=${userId}`)
+```
+
+- `console.log` 절대 사용 금지, 반드시 `this.logger` 사용
+- 에러 로그에 충분한 컨텍스트(ID, userId 등) 포함
+
+### 보안 — 응답 데이터 노출 주의
+
+- DB 엔티티 직접 반환 금지 → 응답 DTO(또는 `select` 필터)로 필드 명시
+- `password`, `refreshToken` 등 민감 필드는 select에서 반드시 제외
+- 외부 서비스(Claude API 등) 에러 원문을 클라이언트에 그대로 전달 금지
+
 ## 완료 보고 포맷
 ```
 [Backend 완료]

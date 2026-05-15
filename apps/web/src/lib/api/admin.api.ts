@@ -39,9 +39,10 @@ export async function fetchPipelineStatus(): Promise<ApiResponse<PipelineStatus>
 
 /** 파이프라인 실행 로그 조회 — 백엔드가 { data, meta } 반환, data 배열만 추출 */
 export async function fetchPipelineLogs(page = 1, limit = 50): Promise<ApiResponse<PipelineLog[]>> {
-  const res = await apiClient.get<{ data: PipelineLog[]; meta: { total: number; page: number; limit: number } }>(
-    `/api/admin/pipeline/logs?page=${page}&limit=${limit}`
-  )
+  const res = await apiClient.get<{
+    data: PipelineLog[]
+    meta: { total: number; page: number; limit: number }
+  }>(`/api/admin/pipeline/logs?page=${page}&limit=${limit}`)
   if (!res.success) return res as unknown as ApiResponse<PipelineLog[]>
   return { success: true, data: res.data.data }
 }
@@ -79,16 +80,20 @@ export async function toggleSourceActive(
 /** 기사 목록 조회 — { data, meta } 형태로 반환 (페이지네이션 포함) */
 export async function fetchAdminArticles(
   filter: Partial<ArticleFilter>
-): Promise<ApiResponse<{ data: AdminArticle[]; meta: { total: number; page: number; limit: number } }>> {
+): Promise<
+  ApiResponse<{ data: AdminArticle[]; meta: { total: number; page: number; limit: number } }>
+> {
   const params = new URLSearchParams()
-  if (filter.mainCategory && filter.mainCategory !== 'ALL') params.set('mainCategory', filter.mainCategory)
+  if (filter.mainCategory && filter.mainCategory !== 'ALL')
+    params.set('mainCategory', filter.mainCategory)
   if (filter.status && filter.status !== 'ALL') params.set('status', filter.status)
   if (filter.sourceName) params.set('sourceName', filter.sourceName)
   params.set('page', String(filter.page ?? 1))
   params.set('limit', String(filter.limit ?? 30))
-  return await apiClient.get<{ data: AdminArticle[]; meta: { total: number; page: number; limit: number } }>(
-    `/api/admin/articles?${params.toString()}`
-  )
+  return await apiClient.get<{
+    data: AdminArticle[]
+    meta: { total: number; page: number; limit: number }
+  }>(`/api/admin/articles?${params.toString()}`)
 }
 
 /** 기사 숨기기 */
@@ -125,9 +130,10 @@ export async function fetchAdminPosts(
   }
   params.set('page', String(filter.page ?? 1))
   params.set('limit', String(filter.limit ?? 20))
-  const res = await apiClient.get<{ data: AdminPost[]; meta: { total: number; page: number; limit: number } }>(
-    `/api/admin/posts?${params.toString()}`
-  )
+  const res = await apiClient.get<{
+    data: AdminPost[]
+    meta: { total: number; page: number; limit: number }
+  }>(`/api/admin/posts?${params.toString()}`)
   if (!res.success) return res as unknown as ApiResponse<{ posts: AdminPost[]; total: number }>
   return { success: true, data: { posts: res.data.data, total: res.data.meta.total } }
 }
@@ -154,9 +160,10 @@ export async function fetchAdminReports(
   if (status && status !== 'ALL') params.set('status', status)
   params.set('page', String(page))
   params.set('limit', String(limit))
-  const res = await apiClient.get<{ data: AdminReport[]; meta: { total: number; page: number; limit: number } }>(
-    `/api/admin/reports?${params.toString()}`
-  )
+  const res = await apiClient.get<{
+    data: AdminReport[]
+    meta: { total: number; page: number; limit: number }
+  }>(`/api/admin/reports?${params.toString()}`)
   if (!res.success) return res as unknown as ApiResponse<{ reports: AdminReport[]; total: number }>
   return { success: true, data: { reports: res.data.data, total: res.data.meta.total } }
 }
@@ -167,7 +174,9 @@ export async function resolveReport(
   action: 'RESOLVED' | 'DISMISSED'
 ): Promise<ApiResponse<{ message: string }>> {
   const backendAction = action === 'RESOLVED' ? 'resolve' : 'reject'
-  return await apiClient.patch<{ message: string }>(`/api/admin/reports/${id}`, { action: backendAction })
+  return await apiClient.patch<{ message: string }>(`/api/admin/reports/${id}`, {
+    action: backendAction,
+  })
 }
 
 // ─── 카드뉴스 ──────────────────────────────────────────────────────
@@ -180,7 +189,11 @@ export interface CardSlide {
 /** 카드뉴스 생성 요청 — 기사 ID와 선택적 이미지 URL을 전달해 슬라이드 HTML 배열을 반환 */
 export async function generateCardNews(
   articleId: string,
-  imageUrl?: string,
-): Promise<{ success: boolean; data?: { slides: string[] }; error?: { code: string; message: string } }> {
+  imageUrl?: string
+): Promise<{
+  success: boolean
+  data?: { slides: string[] }
+  error?: { code: string; message: string }
+}> {
   return apiClient.post(`/api/admin/articles/${articleId}/card-news`, { imageUrl })
 }
