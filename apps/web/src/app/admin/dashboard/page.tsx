@@ -421,8 +421,8 @@ export default function AdminDashboardPage() {
                 className={[
                   'px-3 py-1 rounded-md text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed',
                   articleCategory === tab
-                    ? 'bg-[var(--color-primary)] text-white'
-                    : 'border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface)]',
+                    ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                    : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)]',
                 ].join(' ')}
               >
                 {ARTICLE_CATEGORY_TAB_LABELS[tab]}
