@@ -1,7 +1,12 @@
 // apps/api/src/news/pipeline/article-rewriter.ts
 // 원문 기사를 Claude API를 통해 게임 매거진 스타일로 재작성
+// JSON 파싱 실패 시 원본 응답 앞 500자를 로그에 기록하여 디버깅 지원
 
-import Anthropic from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk"
+import { Logger } from "@nestjs/common"
+
+// 모듈 전역 Logger 인스턴스 — 파이프라인 함수에서 공통 사용
+const logger = new Logger('ArticleRewriter')
 
 // 재작성 결과 인터페이스
 export interface RewriteResult {
@@ -101,9 +106,10 @@ export async function rewriteEsportsArticle(
   const responseText =
     message.content[0].type === "text" ? message.content[0].text : "";
 
-  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
-    throw new Error("Claude 이스포츠 재작성 응답에서 JSON을 찾을 수 없습니다.");
+    logger.error(`Claude 이스포츠 재작성 JSON 파싱 실패 — 원본 응답: ${responseText.slice(0, 500)}`)
+    throw new Error("Claude 이스포츠 재작성 응답에서 JSON을 찾을 수 없습니다.")
   }
 
   const parsed = JSON.parse(jsonMatch[0]) as RewriteResponseJson;
@@ -171,9 +177,10 @@ export async function rewriteConsoleArticle(
   const responseText =
     message.content[0].type === "text" ? message.content[0].text : "";
 
-  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
-    throw new Error("Claude Console 재작성 응답에서 JSON을 찾을 수 없습니다.");
+    logger.error(`Claude Console 재작성 JSON 파싱 실패 — 원본 응답: ${responseText.slice(0, 500)}`)
+    throw new Error("Claude Console 재작성 응답에서 JSON을 찾을 수 없습니다.")
   }
 
   const parsed = JSON.parse(jsonMatch[0]) as RewriteResponseJson;
@@ -214,9 +221,10 @@ ${content}`,
   const responseText =
     message.content[0].type === "text" ? message.content[0].text : "";
 
-  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
-    throw new Error("Claude 재작성 응답에서 JSON을 찾을 수 없습니다.");
+    logger.error(`Claude 재작성 JSON 파싱 실패 — 원본 응답: ${responseText.slice(0, 500)}`)
+    throw new Error("Claude 재작성 응답에서 JSON을 찾을 수 없습니다.")
   }
 
   const parsed = JSON.parse(jsonMatch[0]) as RewriteResponseJson;

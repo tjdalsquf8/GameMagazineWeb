@@ -76,9 +76,9 @@ export async function updateNotificationSettings(
   return apiClient.patch<NotificationSettings>('/api/users/me/notifications', settings)
 }
 
-/** 회원 탈퇴 */
-export async function deleteAccount(): Promise<ApiResponse<{ message: string }>> {
-  return apiClient.delete<{ message: string }>('/api/users/me')
+/** 회원 탈퇴 — 비밀번호 재확인 후 처리 */
+export async function deleteAccount(password: string): Promise<ApiResponse<{ message: string }>> {
+  return apiClient.delete<{ message: string }>('/api/users/me', { password })
 }
 
 /** Presigned URL 발급 — R2 직접 업로드용 서명된 URL과 최종 공개 URL 반환 */

@@ -202,6 +202,55 @@ export async function togglePostRecommend(
   return res as unknown as { recommended: boolean; recommendCount: number }
 }
 
+/** 게시글 신고 — 중복 신고 시 409 에러 */
+export async function reportPost(
+  postId: number,
+  reason: string,
+  token: string
+): Promise<{ message: string }> {
+  const res = await apiClient.post<{ message: string }>(
+    `/api/posts/${postId}/report`,
+    { reason },
+    { token }
+  )
+
+  if ('success' in res && !res.success) {
+    const err = res as { success: false; error: { code: string; message: string } }
+    throw Object.assign(new Error(err.error.message), { code: err.error.code })
+  }
+
+  if ('success' in res && res.success && 'data' in res) {
+    return (res as ApiSuccess<{ message: string }>).data
+  }
+
+  return res as unknown as { message: string }
+}
+
+/** 댓글/대댓글 신고 — 중복 신고 시 409 에러 */
+export async function reportComment(
+  postId: number,
+  commentId: number,
+  reason: string,
+  token: string
+): Promise<{ message: string }> {
+  const res = await apiClient.post<{ message: string }>(
+    `/api/posts/${postId}/comments/${commentId}/report`,
+    { reason },
+    { token }
+  )
+
+  if ('success' in res && !res.success) {
+    const err = res as { success: false; error: { code: string; message: string } }
+    throw Object.assign(new Error(err.error.message), { code: err.error.code })
+  }
+
+  if ('success' in res && res.success && 'data' in res) {
+    return (res as ApiSuccess<{ message: string }>).data
+  }
+
+  return res as unknown as { message: string }
+}
+
 /** 댓글 추천 토글 */
 export async function toggleCommentRecommend(
   postId: number,

@@ -20,6 +20,9 @@
     "rss-parser": "^3.13.0"
   },
   "pnpm": {
+    "overrides": {
+      "glob": ">=10.5.0"
+    },
     "onlyBuiltDependencies": [
       "@nestjs/core",
       "@prisma/client",

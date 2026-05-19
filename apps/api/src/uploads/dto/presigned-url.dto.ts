@@ -13,9 +13,9 @@ export class PresignedUrlDto {
   @Max(10 * 1024 * 1024)
   fileSize!: number
 
-  // 업로드 대상 폴더 — 'posts' | 'profiles', 기본값 'posts'
+  // 업로드 대상 폴더 — 'posts' | 'profiles' | 'editornews' | 'news/pc' | 'news/mobile' | 'news/console' | 'news/esports', 기본값 'posts'
   @IsOptional()
   @IsString()
-  @IsIn(['posts', 'profiles'])
+  @IsIn(['posts', 'profiles', 'editornews', 'news/pc', 'news/mobile', 'news/console', 'news/esports'])
   folder?: string
 }

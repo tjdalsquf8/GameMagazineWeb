@@ -5,7 +5,6 @@
   CategorySidebar 활성 카테고리 동적 연결
 - WriteForm 등록 버튼 POST 요청 로직 추가
   (현재 의도적 비활성화)
-- middleware JWT 만료 검증 강화
 
 커뮤니티 crud
 경고 사항:
@@ -13,11 +12,6 @@
 - eslint@8.57.1 deprecated — ESLint  
   v8은 지원 종료됨. 현재는 동작하지만  
   추후 v9로 마이그레이션 필요.
-
-로그인 토큰 후속 작업
-토큰 만료(1시간) 후 silent refresh 시 새 accessToken으로 쿠키도  
- 갱신하는 로직이 필요합니다. refresh 구현 시
-setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ## 해야할 것
 
@@ -83,88 +77,6 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ---
 
-## 운영 환경 잠재 문제 (코드 분석으로 발견)
-
-> 배포 전 체크리스트 작업 중 코드 분석으로 추가 발견된 실운영 문제들.
-> 🔴 = 실제 장애·보안 사고 위험 / 🟡 = 운영 품질 저하 가능성
-
----
-
-### 🔴 CRITICAL — 배포 전 반드시 수정
-
-**백엔드**
-
-- [x] **뉴스 파이프라인 API 인증 없음** — `apps/api/src/news/news.controller.ts`  
-      `@UseGuards(AdminGuard)` 추가 완료. `news.module.ts`에 AdminGuard provider 등록 완료.
-
-- [x] **JWT 시크릿 하드코딩 폴백** — `apps/api/src/auth/auth.module.ts:16`  
-      `configService.get('JWT_SECRET', 'default-secret')` → `configService.getOrThrow('JWT_SECRET')` 교체 완료.
-
-- [x] **R2 자격증명 ConfigService 미사용** — `apps/api/src/uploads/upload.service.ts`  
-      `process.env.R2_*!` 전부 `ConfigService.getOrThrow()` 로 교체 완료. `upload.module.ts`에 ConfigModule import 추가.
-
-**프론트엔드**
-
-- [ ] **`/admin` 라우트 미들웨어 미보호** — `apps/web/src/middleware.ts`  
-      현재 `/community/write`, `/my`만 보호. `/admin/**` 경로가 미들웨어에 없어 SSR 레벨에서 비인가 접근 가능.  
-      `matcher`에 `/admin/:path*` 추가 후 adminOnly 체크 로직 필요.
-
-- [ ] **CardNewsSlide XSS 위험** — `apps/web/src/components/admin/CardNewsSlide.tsx:18`  
-      `dangerouslySetInnerHTML` 사용 시 sanitize 미적용. html2canvas 캡처용이라도 어드민 인풋이 그대로 렌더링되면 XSS 가능.  
-      `sanitizeHTML()` 래핑 필요.
-
----
-
-### 🟡 HIGH — 운영 전 수정 권장
-
-**백엔드**
-
-- [ ] **게시글·댓글 content 길이 제한 없음** — `apps/api/src/posts/dto/create-post.dto.ts:11`, `comments/dto/create-comment.dto.ts:7`  
-      `@MaxLength` 없어 수십 MB 텍스트 저장 가능 → DB 과부하. `@MaxLength(50000)` 추가.
-
-- [ ] **페이지네이션 limit 상한 없음** — `apps/api/src/posts/dto/post-query.dto.ts:21`  
-      `limit` 필드에 `@Max()` 없음 → `limit=99999` 등 DoS 가능. `@Max(100)` 추가.
-
-- [ ] **Anthropic API 키 process.env 직접 접근** — `apps/api/src/news/news.service.ts:36`, `admin/admin.service.ts:41`  
-      ConfigService 대신 `process.env.ANTHROPIC_API_KEY` 직접 사용. 키 누락 시 런타임에서야 에러 발생. ConfigService로 교체.
-
-**프론트엔드**
-
-- [ ] **API URL localhost 하드코딩 폴백 다수** — 아래 파일들의 env 미설정 시 `http://localhost:3001`로 폴백
-  - `apps/web/src/lib/api/client.ts:6`
-  - `apps/web/src/components/auth/AuthProvider.tsx:7`
-  - `apps/web/src/app/page.tsx:11`
-  - `apps/web/src/app/news/[id]/page.tsx:34`
-  - `apps/web/src/app/editor-picks/[id]/page.tsx:23`  
-    배포 환경에서 `NEXT_PUBLIC_API_URL` 미설정 시 모든 API 요청이 localhost로 향함.  
-    폴백 제거하고 env 누락 시 빌드 시점에 에러 처리 권장.
-
----
-
-### 🟡 MEDIUM — 운영 안정성
-
-**백엔드**
-
-- [ ] **신고 목록 N+1 쿼리** — `apps/api/src/admin/admin.service.ts:717-738`  
-      신고 타입별로 posts/comments `findMany`를 별도 호출. 신고 수 많을 시 쿼리 폭증. 배치 쿼리로 개선.
-
-- [ ] **뉴스 limit 쿼리 파라미터 검증 없음** — `apps/api/src/news/news.controller.ts:59`  
-      `@Query('limit') limit = 5` 에 별도 파이프 없어 음수·문자열 값 서비스까지 도달 가능.  
-      `ParseIntPipe` + `DefaultValuePipe` 적용.
-
-**프론트엔드**
-
-- [ ] **미들웨어 토큰 서명 미검증** — `apps/web/src/middleware.ts:8-15`  
-      `isTokenExpired()`가 exp 클레임만 파싱. 서명 검증 없이 만료 여부만 판단.  
-      미들웨어 리다이렉트 로직은 UX용이므로 큰 문제는 아니나, 위조 토큰으로 보호 라우트 접근 가능성 있음.  
-      실질적 인가는 백엔드 JwtAuthGuard에서 이루어지므로 중간 우선순위.
-
-- [ ] **에러 바운더리 없음**  
-      `app/` 디렉터리 내 `error.tsx` 파일 없음. API 에러 시 Next.js 기본 에러 화면 노출.  
-      최소한 루트 `error.tsx`와 주요 라우트에 에러 바운더리 추가 권장.
-
----
-
 ## 배포 전 체크리스트
 
 > 🔴 이거 안 하면 배포 불가 / 🟡 배포 전에 해두면 좋음 / 🟢 배포 후에 천천히 해도 됨
@@ -209,31 +121,7 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ---
 
-### 3단계. 보안 점검
-
-🔴 **로그인·인증 관련**
-
-- [ ] `auth.controller.ts` 파일에서 쿠키 설정 `sameSite: 'none'` → `'lax'`로 변경 (TODO 주석 2곳). 이걸 안 하면 다른 사이트에서 로그인 요청을 위조할 수 있음
-- [ ] 위와 같이 변경할 때 `secure: true`도 함께 설정 (HTTPS에서만 쿠키 전송)
-- [ ] 어드민 전용 API들이 실제로 어드민만 접근 가능한지 확인 — 일반 계정으로 어드민 API 호출 시 차단되는지 테스트
-- [ ] 비밀번호가 DB에 암호화(bcrypt)되어 저장되고 있는지 확인 (절대 그대로 저장 금지)
-
-🔴 **API 보안**
-
-- [ ] 백엔드 CORS 설정 — `apps/api/src/main.ts`에서 허용 주소를 실제 프론트엔드 도메인으로만 제한 (지금 localhost나 전체 허용이면 반드시 변경)
-- [ ] 로그인·회원가입·비밀번호 찾기 — 짧은 시간에 너무 많이 요청하면 차단되는지 확인 (무차별 대입 방어)
-- [ ] 게시글·댓글·에디터픽 본문에 악성 HTML/스크립트가 걸러지는지 확인 (이미 `sanitizeHTML` 적용 중이나 빠진 곳 없는지 확인)
-- [ ] 이미지 업로드 — 이미지 파일만 올릴 수 있고 다른 형식 파일은 거부되는지 확인
-- [ ] API 응답에 비밀번호 필드가 포함되어 나오지 않는지 확인
-
-🟡
-
-- [ ] 어드민 페이지(`/admin`)에 일반 유저로 접근 시 튕겨나가는지 확인
-- [ ] 서버가 HTTPS로 접속되는지, HTTP로 들어오면 HTTPS로 자동 이동하는지 확인
-
----
-
-### 4단계. 데이터베이스
+### 3단계. 데이터베이스
 
 🔴
 
@@ -248,7 +136,7 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ---
 
-### 5단계. 구글 로그인 설정
+### 4단계. 구글 로그인 설정
 
 🔴
 
@@ -259,12 +147,11 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 🟡
 
-- [ ] **로그인 유지 버그 수정** — 로그인 토큰이 만료됐을 때 자동으로 갱신은 되는데, 브라우저 쿠키엔 반영이 안 돼서 페이지 이동 시 강제 로그아웃 되는 문제. `setAccessTokenCookie(newToken)` 함께 호출하도록 수정 필요
 - [ ] 이메일 인증 메일 실제로 발송되는지 테스트 (Gmail 등 실제 주소로 테스트)
 
 ---
 
-### 6단계. 콘텐츠 & 기능 완성도
+### 5단계. 콘텐츠 & 기능 완성도
 
 🔴
 
@@ -279,7 +166,7 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ---
 
-### 7단계. 법적으로 꼭 있어야 하는 페이지
+### 6단계. 법적으로 꼭 있어야 하는 페이지
 
 🔴 회원가입 받는 서비스는 법적으로 아래가 필수
 
@@ -300,7 +187,7 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ---
 
-### 8단계. 검색 엔진 노출 (SEO)
+### 7단계. 검색 엔진 노출 (SEO)
 
 🟡
 
@@ -314,7 +201,7 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ---
 
-### 9단계. 속도 & 성능
+### 8단계. 속도 & 성능
 
 🟡
 
@@ -324,7 +211,7 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ---
 
-### 10단계. 서버 & 도메인 연결
+### 9단계. 서버 & 도메인 연결
 
 🔴
 
@@ -342,7 +229,7 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 
 ---
 
-### 11단계. 최종 실제 사용 테스트 (배포 직전)
+### 10단계. 최종 실제 사용 테스트 (배포 직전)
 
 > 코드가 아니라 실제로 써보면서 확인
 
@@ -355,3 +242,71 @@ setAccessTokenCookie(newToken) 함께 호출하면 됩니다.
 - [ ] 휴대폰(아이폰·안드로이드)으로 주요 페이지 레이아웃 확인
 - [ ] 없는 주소 들어갔을 때 404 페이지 뜨는지 확인 (예: `/없는페이지`)
 - [ ] 로그인 안 한 상태에서 `/admin`, `/my` 들어가면 로그인 페이지로 이동하는지 확인
+
+---
+
+## 추후 붙여야 할 것 — Redis
+
+### 도입 시점
+트래픽 증가, 오토스케일링, JWT 즉시 무효화 필요 시점에 도입.  
+초기에는 EC2에 직접 설치($0), 안정화 후 ElastiCache 이전.
+
+---
+
+### 1. JWT 블랙리스트 (accessToken 즉시 무효화)
+**도입 트리거:** 로그아웃 후 탈취된 토큰이 1시간 유효한 보안 이슈
+
+수정 파일:
+- `apps/api/src/auth/auth.service.ts` — `logout()` 에서 accessToken을 Redis에 `SET blacklist:{token} 1 EX 3600` 저장
+- `apps/api/src/auth/strategies/jwt.strategy.ts` — `validate()` 에서 Redis 블랙리스트 조회 후 차단
+- `apps/api/src/auth/auth.module.ts` — RedisModule import 추가
+
+---
+
+### 2. 뉴스 목록 / 커뮤니티 목록 캐시
+**도입 트리거:** 메인 페이지 로딩 느려질 때, 동시 접속자 증가 시
+
+수정 파일:
+- `apps/api/src/news/news.service.ts` — `getNewsList()` 결과를 `news:list:{category}:{page}` 키로 캐시 (TTL 2분)
+- `apps/api/src/posts/posts.service.ts` — `getPosts()` 결과를 `posts:list:{category}:{page}` 키로 캐시 (TTL 1분)
+- 뉴스/게시글 생성·수정·삭제 시 관련 캐시 키 invalidate 처리
+
+---
+
+### 3. 인기글 캐시 (뉴스 상세 페이지 사이드바)
+**도입 트리거:** 위와 동일, 상세 페이지 진입 시 사이드바 쿼리 부하
+
+수정 파일:
+- `apps/api/src/news/news.service.ts` — `getPopularNews()` 결과를 `news:popular:{category}` 키로 캐시 (TTL 10분)
+- `apps/api/src/posts/posts.service.ts` — 커뮤니티 인기글 결과를 `posts:popular` 키로 캐시 (TTL 5분)
+- `apps/web/src/app/news/[id]/page.tsx` — 사이드바 인기글 API 호출 그대로 유지 (백엔드에서 처리)
+
+---
+
+### 4. 조회수 카운터
+**도입 트리거:** 인기 기사에 동시 조회수 UPDATE 병목 발생 시
+
+수정 파일:
+- `apps/api/src/news/news.service.ts` — `incrementViewCount()` 를 DB UPDATE 대신 `INCR news:view:{id}` 로 변경
+- 배치 작업(크론) 추가 — 5분마다 Redis 카운터를 DB에 반영 후 초기화
+- `apps/api/prisma/schema.prisma` — 변경 없음 (DB 컬럼 유지)
+
+---
+
+### 5. Rate Limit 분산 처리
+**도입 트리거:** EC2 인스턴스 2대 이상으로 늘릴 때
+
+수정 파일:
+- `apps/api/package.json` — `@nestjs/throttler`, `@nestjs-modules/ioredis` 또는 `cache-manager-redis-store` 추가
+- `apps/api/src/app.module.ts` — `ThrottlerModule` storage를 `ThrottlerStorageRedisService`로 교체
+- `apps/api/.env.example` — `REDIS_URL` 환경변수 추가
+- `apps/api/src/auth/auth.controller.ts` — Rate Limit 하드코딩 값(`limit: 3, ttl: 300000` 등)을 config로 분리
+- `apps/api/src/editor-picks/editor-picks.controller.ts` — 동일
+- `apps/api/src/uploads/upload.controller.ts` — 동일
+
+---
+
+### 공통 작업 (Redis 도입 시 무조건 필요)
+- `apps/api/src/redis/redis.module.ts` — RedisModule 생성 (ioredis 기반)
+- `apps/api/.env.example` — `REDIS_URL=redis://localhost:6379` 추가
+- EC2 설정 — `sudo apt install redis-server` 또는 ElastiCache 엔드포인트 연결

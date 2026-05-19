@@ -11,6 +11,7 @@ import {
   Param,
   Query,
   Body,
+  Request,
   UseGuards,
   UseInterceptors,
   ParseIntPipe,
@@ -227,26 +228,40 @@ export class AdminController {
 
   // 유저 정지
   @Patch('users/:id/ban')
-  async banUser(@Param('id') id: string, @Body() dto: BanUserDto) {
-    return this.adminService.banUser(id, dto)
+  async banUser(
+    @Param('id') id: string,
+    @Body() dto: BanUserDto,
+    @Request() req: { user: { sub: string } },
+  ) {
+    return this.adminService.banUser(id, dto, req.user.sub)
   }
 
   // 유저 정지 해제
   @Patch('users/:id/unban')
-  async unbanUser(@Param('id') id: string) {
-    return this.adminService.unbanUser(id)
+  async unbanUser(
+    @Param('id') id: string,
+    @Request() req: { user: { sub: string } },
+  ) {
+    return this.adminService.unbanUser(id, req.user.sub)
   }
 
   // 유저 역할 변경
   @Patch('users/:id/role')
-  async updateRole(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
-    return this.adminService.updateRole(id, dto)
+  async updateRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateRoleDto,
+    @Request() req: { user: { sub: string } },
+  ) {
+    return this.adminService.updateRole(id, dto, req.user.sub)
   }
 
   // 유저 삭제
   @Delete('users/:id')
-  async deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id)
+  async deleteUser(
+    @Param('id') id: string,
+    @Request() req: { user: { sub: string } },
+  ) {
+    return this.adminService.deleteUser(id, req.user.sub)
   }
 
   // ============================

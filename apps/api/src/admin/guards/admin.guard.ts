@@ -14,7 +14,6 @@ import { Request } from 'express'
 
 interface JwtPayload {
   sub: string
-  email: string
   role: string
   iat?: number
   exp?: number
@@ -39,7 +38,7 @@ export class AdminGuard implements CanActivate {
 
     try {
       const payload = this.jwtService.verify<JwtPayload>(token, {
-        secret: this.configService.get<string>('JWT_SECRET'),
+        secret: this.configService.getOrThrow<string>('JWT_SECRET'),
       })
 
       if (payload.role !== 'ADMIN') {

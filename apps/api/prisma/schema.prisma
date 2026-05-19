@@ -58,6 +58,7 @@ model User {
   reports              Report[]
   refreshTokens        RefreshToken[]
   editorPickArticles   EditorPickArticle[]
+  banHistories         BanHistory[]
 
   @@map("users")
 }
@@ -83,12 +84,14 @@ model RefreshToken {
 // ============================
 
 model EmailVerification {
-  id         Int      @id @default(autoincrement())
-  email      String   @unique
-  code       String
-  expiresAt  DateTime @map("expires_at")
-  isVerified Boolean  @default(false) @map("is_verified")
-  createdAt  DateTime @default(now()) @map("created_at")
+  id          Int       @id @default(autoincrement())
+  email       String    @unique
+  code        String
+  expiresAt   DateTime  @map("expires_at")
+  isVerified  Boolean   @default(false) @map("is_verified")
+  failCount   Int       @default(0) @map("fail_count")
+  lockedUntil DateTime? @map("locked_until") // 5회 실패 시 잠금 해제 시각
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   @@map("email_verifications")
 }
@@ -382,6 +385,26 @@ model EditorPickArticle {
   @@index([createdAt(sort: Desc)])
   @@index([authorId])
   @@map("editor_pick_articles")
+}
+
+// ============================
+// 유저 정지 이력 (어드민)
+// ============================
+
+model BanHistory {
+  id          Int       @id @default(autoincrement())
+  userId      String    @map("user_id")
+  adminId     String?   @map("admin_id") // 정지를 집행한 어드민 ID — nullable (기존 데이터 호환)
+  duration    String    // "7d" | "30d" | "permanent"
+  reason      String
+  bannedAt    DateTime  @default(now()) @map("banned_at")
+  bannedUntil DateTime? @map("banned_until")
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([adminId])
+  @@map("ban_histories")
 }
 
 // ============================

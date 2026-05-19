@@ -3,6 +3,7 @@
 // 서버 컴포넌트: mainCategory 기반으로 서버에서 직접 fetch
 
 import Link from 'next/link'
+import { env } from '@/lib/env'
 
 // 뉴스 mainCategory → 커뮤니티 부모 categoryId 매핑
 // (커뮤니티 카테고리: 모바일=1, 콘솔=2, PC=3, Esports는 커뮤니티에 없음)
@@ -53,7 +54,7 @@ function formatViewCount(count: number): string {
 
 // 카테고리별 인기 뉴스 fetch — 실패 시 빈 배열 반환
 async function fetchPopularNews(mainCategory: string): Promise<PopularNewsItem[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+  const baseUrl = env.apiUrl
   try {
     const res = await fetch(`${baseUrl}/api/news/popular?mainCategory=${mainCategory}&limit=5`, {
       next: { revalidate: 600 },
@@ -69,7 +70,7 @@ async function fetchPopularNews(mainCategory: string): Promise<PopularNewsItem[]
 
 // 커뮤니티 인기글 fetch — 실패 시 빈 배열 반환
 async function fetchPopularPosts(categoryId: number): Promise<PopularPostItem[]> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+  const baseUrl = env.apiUrl
   try {
     const res = await fetch(
       `${baseUrl}/api/posts?sort=popular&categoryId=${categoryId}&limit=5&page=1`,

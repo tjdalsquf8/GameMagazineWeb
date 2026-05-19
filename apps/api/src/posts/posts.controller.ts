@@ -20,8 +20,10 @@ import { PostsService } from './posts.service'
 import { CreatePostDto } from './dto/create-post.dto'
 import { UpdatePostDto } from './dto/update-post.dto'
 import { PostQueryDto } from './dto/post-query.dto'
+import { ReportDto } from './dto/report-post.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard'
+import { Throttle } from '@nestjs/throttler'
 import { Role } from '@prisma/client'
 import { Request } from 'express'
 
@@ -60,8 +62,9 @@ export class PostsController {
     return { success: true, data }
   }
 
-  /** POST /posts/:postId/view — 조회수 증가 전용 엔드포인트 (인증 불필요) */
+  /** POST /posts/:postId/view — 조회수 증가 전용 엔드포인트 (인증 불필요, IP당 24시간 1회 제한) */
   @Post(':postId/view')
+  @Throttle({ default: { limit: 1, ttl: 86400000 } })
   @HttpCode(HttpStatus.OK)
   async incrementView(@Param('postId', ParseIntPipe) postId: number) {
     return this.postsService.incrementView(postId)
@@ -76,6 +79,19 @@ export class PostsController {
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.postsService.togglePostRecommend(postId, req.user.id)
+    return { success: true, data }
+  }
+
+  /** POST /posts/:postId/report — 게시글 신고 (인증 필요) */
+  @Post(':postId/report')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async reportPost(
+    @Param('postId', ParseIntPipe) postId: number,
+    @Body() dto: ReportDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.postsService.reportPost(postId, dto, req.user.id)
     return { success: true, data }
   }
 

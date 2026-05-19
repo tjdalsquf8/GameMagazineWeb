@@ -39,6 +39,15 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
+  /** 남은 잠금 시간을 한국어 문자열로 변환하는 헬퍼 */
+  private formatRemainingLockTime(lockedUntil: Date): string {
+    const remainMs = lockedUntil.getTime() - Date.now()
+    const remainMin = Math.floor(remainMs / 60000)
+    const remainSec = Math.floor((remainMs % 60000) / 1000)
+    return remainMin > 0 ? `${remainMin}분 ${remainSec}초` : `${remainSec}초`
+  }
+
+  /** 이메일 인증 코드 발송 (잠금 중이면 차단) */
   async sendVerificationCode(dto: SendCodeDto): Promise<{ message: string }> {
     const { email } = dto;
 
@@ -49,6 +58,16 @@ export class AuthService {
     });
     if (existingUser) {
       throw new ConflictException("이미 가입된 이메일입니다");
+    }
+
+    // 잠금 상태 확인 — 5회 실패로 잠긴 경우 새 코드 발급 차단
+    const existing = await this.prisma.emailVerification.findUnique({
+      where: { email },
+      select: { lockedUntil: true },
+    })
+    if (existing?.lockedUntil && existing.lockedUntil > new Date()) {
+      const timeStr = this.formatRemainingLockTime(existing.lockedUntil)
+      throw new BadRequestException(`인증이 잠겼습니다. ${timeStr} 후 다시 시도해주세요`)
     }
 
     // 5분 내 동일 이메일 3회 초과 발송 확인
@@ -76,13 +95,15 @@ export class AuthService {
     const code = randomInt(100000, 999999).toString();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    // upsert: 기존 미인증 레코드 있으면 업데이트, 없으면 생성
+    // upsert: 기존 미인증 레코드 있으면 업데이트, 없으면 생성 (잠금 해제 포함)
     await this.prisma.emailVerification.upsert({
       where: { email },
       update: {
         code,
         expiresAt,
         isVerified: false,
+        failCount: 0,
+        lockedUntil: null,
         createdAt: new Date(),
       },
       create: {
@@ -100,6 +121,7 @@ export class AuthService {
     return { message: "인증 코드가 발송되었습니다" };
   }
 
+  /** 이메일 인증 코드 검증 (잠금 상태 확인 포함) */
   async verifyCode(dto: VerifyCodeDto): Promise<{ verified: boolean }> {
     const { email, code } = dto;
 
@@ -111,12 +133,36 @@ export class AuthService {
       throw new BadRequestException("인증 요청을 찾을 수 없습니다");
     }
 
-    if (verification.code !== code) {
-      throw new BadRequestException("인증 코드가 올바르지 않습니다");
+    // 잠금 상태 확인 — 잠금 해제 시각이 현재보다 미래이면 차단
+    if (verification.lockedUntil && verification.lockedUntil > new Date()) {
+      const timeStr = this.formatRemainingLockTime(verification.lockedUntil)
+      throw new BadRequestException(`인증이 잠겼습니다. ${timeStr} 후 다시 시도해주세요`)
     }
 
     if (verification.expiresAt < new Date()) {
       throw new BadRequestException("인증 코드가 만료되었습니다");
+    }
+
+    if (verification.code !== code) {
+      const newFailCount = verification.failCount + 1;
+
+      if (newFailCount >= 5) {
+        // 5회 실패 시 레코드 삭제 대신 5분 잠금 적용
+        const lockedUntil = new Date(Date.now() + 5 * 60 * 1000)
+        await this.prisma.emailVerification.update({
+          where: { email },
+          data: { lockedUntil, failCount: 0 },
+        })
+        this.logger.warn(`이메일 인증 코드 5회 실패로 5분 잠금: ${email}`)
+        throw new BadRequestException('인증이 잠겼습니다. 5분 0초 후 다시 시도해주세요')
+      }
+
+      await this.prisma.emailVerification.update({
+        where: { email },
+        data: { failCount: newFailCount },
+      });
+
+      throw new BadRequestException("인증 코드가 올바르지 않습니다");
     }
 
     await this.prisma.emailVerification.update({
@@ -234,9 +280,9 @@ export class AuthService {
       data: { lastLoginAt: new Date() },
     })
 
-    const payload = { sub: user.id, email: user.email, role: user.role };
+    const payload = { sub: user.id, role: user.role };
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: "24h",
+      expiresIn: "1h",
     });
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
@@ -271,9 +317,9 @@ export class AuthService {
 
   async refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> {
     // 1단계: JWT 서명 검증
-    let payload: { sub: string; email: string; role: string };
+    let payload: { sub: string; role: string };
     try {
-      payload = this.jwtService.verify<{ sub: string; email: string; role: string }>(
+      payload = this.jwtService.verify<{ sub: string; role: string }>(
         refreshToken,
         { secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET") },
       );
@@ -302,8 +348,8 @@ export class AuthService {
     });
     if (!user) throw new UnauthorizedException("유효하지 않은 토큰입니다");
 
-    const newPayload = { sub: user.id, email: user.email, role: user.role };
-    const accessToken = this.jwtService.sign(newPayload, { expiresIn: "24h" });
+    const newPayload = { sub: user.id, role: user.role };
+    const accessToken = this.jwtService.sign(newPayload, { expiresIn: "1h" });
     const newRefreshToken = this.jwtService.sign(newPayload, {
       secret: this.configService.getOrThrow<string>("JWT_REFRESH_SECRET"),
       expiresIn: "30d",
@@ -485,6 +531,9 @@ export class AuthService {
       where: { id: user.id },
       data: { password: hashedPassword },
     });
+
+    // 비밀번호 재설정 시 기존 세션 전체 무효화
+    await this.prisma.refreshToken.deleteMany({ where: { userId: user.id } });
 
     this.logger.log(`비밀번호 변경 완료: userId=${user.id}`);
     return { message: "비밀번호가 변경되었습니다." };

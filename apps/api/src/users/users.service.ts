@@ -7,12 +7,15 @@ import {
   NotFoundException,
   UnauthorizedException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { PrismaService } from '../prisma/prisma.service'
 import { UpdateNicknameDto } from './dto/update-nickname.dto'
 import { UpdatePasswordDto } from './dto/update-password.dto'
 import { UpdateProfileImageDto } from './dto/update-profile-image.dto'
 import { PaginationQueryDto } from './dto/pagination-query.dto'
+import { DeleteAccountDto } from './dto/delete-account.dto'
 import * as bcrypt from 'bcrypt'
 
 /** 프로필 응답에 사용할 User select */
@@ -31,7 +34,10 @@ const USER_PROFILE_SELECT = {
 export class UsersService {
   private readonly logger = new Logger(UsersService.name)
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
   /** 내 프로필 조회 — 게시글/댓글/좋아요 카운트 포함 */
   async getMyProfile(userId: string) {
@@ -101,11 +107,19 @@ export class UsersService {
     }
   }
 
-  /** 프로필 이미지 변경 — R2 업로드 완료 후 공개 URL을 DB에 저장 */
+  /** 프로필 이미지 변경 — R2 업로드 완료 후 공개 URL을 DB에 저장, R2 도메인 화이트리스트 검증 포함 */
   async updateProfileImage(userId: string, dto: UpdateProfileImageDto) {
+    // profileImage가 존재할 때만 도메인 검증 수행 (null/undefined → 이미지 제거 허용)
+    if (dto.profileImage != null) {
+      const r2PublicUrl = this.configService.getOrThrow<string>('R2_PUBLIC_URL')
+      if (!dto.profileImage.startsWith(r2PublicUrl)) {
+        throw new BadRequestException('허용되지 않는 이미지 URL입니다')
+      }
+    }
+
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { profileImage: dto.profileImage },
+      data: { profileImage: dto.profileImage ?? null },
       select: USER_PROFILE_SELECT,
     })
 
@@ -139,6 +153,9 @@ export class UsersService {
       where: { id: userId },
       data: { password: hashedPassword },
     })
+
+    // 비밀번호 변경 시 기존 세션 전체 무효화
+    await this.prisma.refreshToken.deleteMany({ where: { userId } })
 
     this.logger.log(`비밀번호 변경 완료: userId=${userId}`)
     return { message: '비밀번호가 변경되었습니다.' }
@@ -290,15 +307,23 @@ export class UsersService {
     }
   }
 
-  /** 회원 탈퇴 — 관련 데이터 cascade 삭제 후 유저 삭제 */
-  async deleteAccount(userId: string) {
+  /** 회원 탈퇴 — 비밀번호 재확인 후 관련 데이터 cascade 삭제 */
+  async deleteAccount(userId: string, dto: DeleteAccountDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true },
+      select: { id: true, password: true, provider: true },
     })
 
     if (!user) {
       throw new NotFoundException('유저를 찾을 수 없습니다')
+    }
+
+    // 소셜 로그인 계정은 비밀번호 없음 — 별도 처리 없이 탈퇴 허용
+    if (user.password) {
+      const isValid = await bcrypt.compare(dto.password, user.password)
+      if (!isValid) {
+        throw new UnauthorizedException('비밀번호가 올바르지 않습니다')
+      }
     }
 
     await this.prisma.user.delete({

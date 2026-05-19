@@ -12,6 +12,7 @@ import type {
   PostFilter,
   AdminReport,
   ReportStatus,
+  BanDuration,
 } from '@/types/admin.types'
 import type { ApiResponse } from '@/types'
 import { apiClient } from '@/lib/api/client'
@@ -166,6 +167,18 @@ export async function fetchAdminReports(
   }>(`/api/admin/reports?${params.toString()}`)
   if (!res.success) return res as unknown as ApiResponse<{ reports: AdminReport[]; total: number }>
   return { success: true, data: { reports: res.data.data, total: res.data.meta.total } }
+}
+
+/** 유저 정지 — 신고 페이지에서 직접 호출, PATCH /api/admin/users/:userId/ban */
+export async function banUser(
+  userId: string,
+  duration: BanDuration,
+  reason: string
+): Promise<ApiResponse<{ message: string }>> {
+  return await apiClient.patch<{ message: string }>(`/api/admin/users/${userId}/ban`, {
+    duration,
+    reason,
+  })
 }
 
 /** 신고 처리 — RESOLVED → 'resolve', DISMISSED → 'reject' 로 변환 후 PATCH */

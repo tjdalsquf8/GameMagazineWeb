@@ -18,6 +18,7 @@ import {
 import { CommentsService } from './comments.service'
 import { CreateCommentDto } from './dto/create-comment.dto'
 import { UpdateCommentDto } from './dto/update-comment.dto'
+import { ReportDto } from '../posts/dto/report-post.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard'
 import { Role } from '@prisma/client'
@@ -74,6 +75,20 @@ export class CommentsController {
     @Req() req: AuthenticatedRequest,
   ) {
     const data = await this.commentsService.toggleCommentRecommend(postId, commentId, req.user.id)
+    return { success: true, data }
+  }
+
+  /** POST /posts/:postId/comments/:commentId/report — 댓글 신고 (인증 필요) */
+  @Post(':commentId/report')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  async reportComment(
+    @Param('postId', ParseIntPipe) postId: number,
+    @Param('commentId', ParseIntPipe) commentId: number,
+    @Body() dto: ReportDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.commentsService.reportComment(postId, commentId, dto, req.user.id)
     return { success: true, data }
   }
 

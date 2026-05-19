@@ -1,9 +1,10 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class CreateCommentDto {
   @IsString()
   @IsNotEmpty({ message: '댓글 내용을 입력해주세요' })
+  @MaxLength(1000, { message: '댓글은 1,000자 이하여야 합니다' })
   content!: string
 
   @IsOptional()

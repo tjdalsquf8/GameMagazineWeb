@@ -1,6 +1,9 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+// 비밀번호 찾기 폼 컴포넌트 (4단계: 정보 입력 → 코드 확인 → 새 비밀번호 → 완료)
+// Step 2 인증 코드 5회 실패 시 5분 잠금 UX (카운트다운 + 입력 비활성화) 포함
+
+import { useState, useEffect, FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { forgotPassword, verifyResetToken, resetPassword } from '@/lib/api/auth'
@@ -16,24 +19,28 @@ interface FormErrors {
   general?: string
 }
 
+/** 이름 유효성 검사 */
 function validateName(value: string): string | undefined {
   if (!value.trim()) return '이름을 입력해주세요'
   if (value.trim().length < 2) return '이름은 2자 이상이어야 합니다'
   return undefined
 }
 
+/** 이메일 유효성 검사 */
 function validateEmail(value: string): string | undefined {
   if (!value) return '이메일을 입력해주세요'
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return '올바른 이메일 형식이 아닙니다'
   return undefined
 }
 
+/** 인증 코드 유효성 검사 */
 function validateToken(value: string): string | undefined {
   if (!value) return '인증 코드를 입력해주세요'
   if (!/^\d{6}$/.test(value)) return '인증 코드는 6자리 숫자여야 합니다'
   return undefined
 }
 
+/** 새 비밀번호 유효성 검사 */
 function validateNewPassword(value: string): string | undefined {
   if (!value) return '새 비밀번호를 입력해주세요'
   if (value.length < 8) return '비밀번호는 8자 이상이어야 합니다'
@@ -42,11 +49,22 @@ function validateNewPassword(value: string): string | undefined {
   return undefined
 }
 
+/** 비밀번호 확인 유효성 검사 */
 function validateConfirmPassword(newPassword: string, confirm: string): string | undefined {
   if (!confirm) return '비밀번호 확인을 입력해주세요'
   if (newPassword !== confirm) return '비밀번호가 일치하지 않습니다'
   return undefined
 }
+
+/** ms를 "N분 N초" 또는 "N초" 형식으로 변환 */
+function formatMs(ms: number): string {
+  const totalSec = Math.ceil(ms / 1000)
+  const min = Math.floor(totalSec / 60)
+  const sec = totalSec % 60
+  return min > 0 ? `${min}분 ${sec}초` : `${sec}초`
+}
+
+const LOCK_DURATION_MS = 5 * 60 * 1000 // 5분
 
 export default function ForgotPasswordForm() {
   const router = useRouter()
@@ -60,6 +78,17 @@ export default function ForgotPasswordForm() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
+  /** 잠금 남은 시간(ms). 0이면 잠금 해제 상태 */
+  const [lockRemainingMs, setLockRemainingMs] = useState(0)
+
+  /** 잠금 카운트다운 타이머 (1초마다 1000ms 감소) */
+  useEffect(() => {
+    if (lockRemainingMs <= 0) return
+    const timer = setInterval(() => {
+      setLockRemainingMs((prev) => Math.max(0, prev - 1000))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [lockRemainingMs])
 
   const handleStep1Submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -90,6 +119,7 @@ export default function ForgotPasswordForm() {
     }
   }
 
+  /** Step 2: 인증 코드 검증 처리 */
   const handleStep2Submit = async (e: FormEvent) => {
     e.preventDefault()
     const tokenError = validateToken(token)
@@ -106,6 +136,10 @@ export default function ForgotPasswordForm() {
       if (res.success) {
         setResetToken(res.data.resetToken)
         setStep(3)
+      } else if (res.error.message.includes('잠겼습니다')) {
+        // 5회 실패 잠금 감지: 5분 카운트다운 시작
+        setLockRemainingMs(LOCK_DURATION_MS)
+        setErrors({})
       } else {
         setErrors({ general: res.error.message })
       }
@@ -284,12 +318,26 @@ export default function ForgotPasswordForm() {
                   if (errors.token) setErrors((prev) => ({ ...prev, token: undefined }))
                 }}
                 placeholder="6자리 숫자 입력"
-                className={inputClass(!!errors.token)}
+                disabled={isLoading || lockRemainingMs > 0}
+                className={`${inputClass(!!errors.token)} disabled:opacity-50 disabled:cursor-not-allowed`}
               />
               {errors.token && <p className="mt-1.5 text-xs text-red-500">{errors.token}</p>}
             </div>
 
-            {errors.general && (
+            {/* 잠금 안내 박스 (5회 실패 시 표시) */}
+            {lockRemainingMs > 0 && (
+              <div className="rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-3">
+                <p className="text-sm text-amber-700 font-medium">
+                  인증 코드 5회 오류로 잠겼습니다.
+                </p>
+                <p className="text-sm text-amber-600 mt-0.5">
+                  {formatMs(lockRemainingMs)} 후 다시 인증을 시도해주세요.
+                </p>
+              </div>
+            )}
+
+            {/* 일반 오류 메시지 (잠금 상태가 아닐 때만 표시) */}
+            {errors.general && lockRemainingMs === 0 && (
               <div className="rounded-lg bg-red-50 border border-red-200 px-3.5 py-3">
                 <p className="text-sm text-red-600">{errors.general}</p>
               </div>
@@ -297,7 +345,7 @@ export default function ForgotPasswordForm() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || lockRemainingMs > 0}
               className="w-full mt-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isLoading && (
@@ -311,6 +359,7 @@ export default function ForgotPasswordForm() {
               onClick={() => {
                 setToken('')
                 setErrors({})
+                setLockRemainingMs(0)
                 setStep(1)
               }}
               className="w-full px-4 py-2.5 text-sm text-text-muted hover:text-text-primary transition-colors"

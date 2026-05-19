@@ -67,6 +67,15 @@ export class AuthController {
       path: '/',
     })
 
+    // accessToken을 HttpOnly 쿠키로 설정 — XSS로 인한 JS 접근 차단
+    res.cookie('accessToken', responseData.accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'lax' : 'strict',
+      maxAge: 3600000, // 1시간
+      path: '/',
+    })
+
     return { success: true, data: responseData }
   }
 
@@ -82,6 +91,13 @@ export class AuthController {
       httpOnly: true,
       secure: isProd,
       sameSite: 'strict',
+      path: '/',
+    })
+    // accessToken HttpOnly 쿠키도 함께 정리
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'lax' : 'strict',
       path: '/',
     })
     return { success: true, data: { message: '로그아웃 되었습니다' } }
@@ -107,6 +123,15 @@ export class AuthController {
       secure: isProd,
       sameSite: 'strict',
       maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: '/',
+    })
+
+    // accessToken을 HttpOnly 쿠키로 설정 — XSS로 인한 JS 접근 차단
+    res.cookie('accessToken', result.accessToken, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'lax' : 'strict',
+      maxAge: 3600000, // 1시간
       path: '/',
     })
 

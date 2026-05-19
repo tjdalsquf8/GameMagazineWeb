@@ -93,9 +93,11 @@ export default function CommentList({ postId }: CommentListProps) {
             onChange={(e) => setCommentText(e.target.value)}
             className="w-full px-4 py-3 text-sm text-text-primary placeholder:text-text-muted bg-background resize-none focus:outline-none"
             rows={4}
+            maxLength={1000}
             placeholder="댓글을 작성해주세요"
           />
-          <div className="flex justify-end px-3 py-2 border-t border-border bg-surface">
+          <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-surface">
+            <span className="text-xs text-text-muted">{commentText.length} / 1,000</span>
             <button
               type="button"
               onClick={handleSubmit}

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { ConfigService } from '@nestjs/config'
@@ -6,7 +6,6 @@ import { PrismaService } from '../../prisma/prisma.service'
 
 interface JwtPayload {
   sub: string
-  email: string
   role: string
 }
 
@@ -35,6 +34,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         profileImage: true,
         createdAt: true,
         updatedAt: true,
+        isBanned: true,
+        bannedUntil: true,
       },
     })
 
@@ -42,6 +43,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('유효하지 않은 토큰입니다')
     }
 
-    return user
+    if (user.isBanned) {
+      const isExpired = user.bannedUntil && user.bannedUntil < new Date()
+      if (!isExpired) {
+        const message = user.bannedUntil
+          ? `계정이 ${user.bannedUntil.toLocaleDateString('ko-KR')}까지 정지되었습니다`
+          : '계정이 영구 정지되었습니다'
+        throw new ForbiddenException(message)
+      }
+
+      // 정지 기간 만료 시 DB도 자동 업데이트
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { isBanned: false, bannedUntil: null, banReason: null },
+      })
+    }
+
+    const { isBanned: _, bannedUntil: __, ...safeUser } = user
+    return safeUser
   }
 }

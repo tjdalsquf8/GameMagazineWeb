@@ -7,11 +7,15 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
+  HttpException,
 } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePostDto } from "./dto/create-post.dto";
 import { UpdatePostDto } from "./dto/update-post.dto";
 import { PostQueryDto, PostSortOption } from "./dto/post-query.dto";
+import { ReportDto } from "./dto/report-post.dto";
 import { Role } from "@prisma/client";
 import { Prisma } from "@prisma/client";
 
@@ -237,6 +241,49 @@ export class PostsService {
 
     this.logger.log(`게시글 수정 완료: postId=${postId}, authorId=${user.id}`);
     return updated;
+  }
+
+  /** 게시글 신고 — 자기 자신의 글 신고 불가, 중복 신고 불가 */
+  async reportPost(postId: number, dto: ReportDto, userId: string) {
+    try {
+      const post = await this.prisma.post.findFirst({
+        where: { id: postId, deletedAt: null },
+        select: { id: true, authorId: true },
+      })
+
+      if (!post) {
+        throw new NotFoundException("게시글을 찾을 수 없습니다")
+      }
+
+      if (post.authorId === userId) {
+        throw new BadRequestException("자신의 게시글은 신고할 수 없습니다")
+      }
+
+      const existing = await this.prisma.report.findFirst({
+        where: { type: "POST", targetId: postId, reporterId: userId },
+        select: { id: true },
+      })
+
+      if (existing) {
+        throw new ConflictException("이미 신고한 게시글입니다")
+      }
+
+      await this.prisma.report.create({
+        data: {
+          type: "POST",
+          targetId: postId,
+          reason: dto.reason,
+          reporterId: userId,
+        },
+      })
+
+      this.logger.log(`게시글 신고 접수: postId=${postId}, reporterId=${userId}`)
+      return { message: "신고가 접수되었습니다" }
+    } catch (e) {
+      if (e instanceof HttpException) throw e
+      this.logger.error(`reportPost(${postId}) failed`, e instanceof Error ? e.stack : e)
+      throw new InternalServerErrorException("서버 오류가 발생했습니다")
+    }
   }
 
   /** 게시글 삭제 (본인 또는 ADMIN만 가능, soft delete) */

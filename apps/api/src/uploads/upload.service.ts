@@ -1,7 +1,7 @@
-// 이미지 업로드 서비스 - Cloudflare R2 presigned URL 생성 로직 담당
-import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+// 이미지 업로드 서비스 - Cloudflare R2 presigned URL 생성 및 Magic Number 검증 로직 담당
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { randomUUID } from 'crypto'
 import { PresignedUrlDto } from './dto/presigned-url.dto'
@@ -19,6 +19,16 @@ const MIME_TO_EXT: Record<string, string> = {
   'image/jpg': 'jpg',
   'image/webp': 'webp',
 }
+
+// JPEG Magic Number: FF D8 FF
+const MAGIC_JPEG = [0xff, 0xd8, 0xff]
+
+// PNG Magic Number: 89 50 4E 47
+const MAGIC_PNG = [0x89, 0x50, 0x4e, 0x47]
+
+// WEBP Magic Number: RIFF(4바이트) + ??(4바이트) + WEBP(4바이트)
+const MAGIC_WEBP_RIFF = [0x52, 0x49, 0x46, 0x46]
+const MAGIC_WEBP_WEBP = [0x57, 0x45, 0x42, 0x50]
 
 @Injectable()
 export class UploadService {
@@ -69,5 +79,75 @@ export class UploadService {
     this.logger.log(`Presigned URL 생성 완료: userId=${userId}, key=${key}`)
 
     return { uploadUrl, publicUrl }
+  }
+
+  // 업로드된 파일의 Magic Number를 검증하는 메서드 - 검증 실패 시 R2에서 즉시 삭제
+  async verifyUpload(publicUrl: string): Promise<void> {
+    const r2PublicUrl = this.config.getOrThrow<string>('R2_PUBLIC_URL')
+
+    // publicUrl이 허용된 R2 도메인으로 시작하는지 확인
+    if (!publicUrl.startsWith(`${r2PublicUrl}/`)) {
+      throw new BadRequestException('유효하지 않은 파일 URL입니다.')
+    }
+
+    // publicUrl에서 R2 키 추출
+    const key = publicUrl.slice(`${r2PublicUrl}/`.length)
+
+    let bytes: Uint8Array
+    try {
+      // Range 헤더로 첫 12바이트만 가져오기
+      const response = await fetch(publicUrl, { headers: { Range: 'bytes=0-11' } })
+      if (!response.ok) {
+        throw new Error(`R2 파일 fetch 실패: status=${response.status}`)
+      }
+      const buffer = await response.arrayBuffer()
+      bytes = new Uint8Array(buffer)
+    } catch (e) {
+      this.logger.error(`verifyUpload fetch 실패: key=${key}`, e instanceof Error ? e.stack : e)
+      throw new InternalServerErrorException('파일 검증 중 오류가 발생했습니다.')
+    }
+
+    // Magic Number 검증 실패 시 R2에서 파일 삭제 후 예외 발생
+    if (!this.checkMagicNumber(bytes)) {
+      this.logger.warn(`Magic Number 검증 실패 - 파일 삭제: key=${key}`)
+      await this.deleteFromR2(key)
+      throw new BadRequestException('허용되지 않는 파일 형식입니다. 실제 파일 내용이 이미지가 아닙니다.')
+    }
+
+    this.logger.log(`Magic Number 검증 성공: key=${key}`)
+  }
+
+  // 파일 첫 12바이트로 JPEG/PNG/WEBP Magic Number를 검사하는 private 메서드
+  private checkMagicNumber(bytes: Uint8Array): boolean {
+    if (bytes.length < 12) {
+      return false
+    }
+
+    // JPEG 검증: FF D8 FF
+    const isJpeg = MAGIC_JPEG.every((byte, i) => bytes[i] === byte)
+    if (isJpeg) return true
+
+    // PNG 검증: 89 50 4E 47
+    const isPng = MAGIC_PNG.every((byte, i) => bytes[i] === byte)
+    if (isPng) return true
+
+    // WEBP 검증: bytes[0-3] = RIFF AND bytes[8-11] = WEBP
+    const isRiff = MAGIC_WEBP_RIFF.every((byte, i) => bytes[i] === byte)
+    const isWebpSignature = MAGIC_WEBP_WEBP.every((byte, i) => bytes[8 + i] === byte)
+    if (isRiff && isWebpSignature) return true
+
+    return false
+  }
+
+  // R2에서 파일을 삭제하는 private 메서드 - 검증 실패한 악성 파일 제거용
+  private async deleteFromR2(key: string): Promise<void> {
+    try {
+      const bucket = this.config.getOrThrow<string>('R2_BUCKET_NAME')
+      const command = new DeleteObjectCommand({ Bucket: bucket, Key: key })
+      await this.s3Client.send(command)
+      this.logger.log(`R2 파일 삭제 완료: key=${key}`)
+    } catch (e) {
+      this.logger.error(`R2 파일 삭제 실패: key=${key}`, e instanceof Error ? e.stack : e)
+    }
   }
 }

@@ -2,6 +2,7 @@
 // 뉴스 서비스 — RSS 수집·분류·재작성 파이프라인 실행 및 뉴스 CRUD 처리
 
 import { Injectable, NotFoundException, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import Anthropic from '@anthropic-ai/sdk'
 import { PrismaService } from '../prisma/prisma.service'
 import { FEED_SOURCES } from './constants/feed-sources'
@@ -30,10 +31,13 @@ export class NewsService {
   private readonly logger = new Logger(NewsService.name)
   private readonly anthropic: Anthropic
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {
     // Anthropic 클라이언트 초기화
     this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: this.configService.getOrThrow<string>('ANTHROPIC_API_KEY'),
     })
   }
 
@@ -166,7 +170,8 @@ export class NewsService {
 
     let matches
     try {
-      matches = await fetchCompletedLckMatches()
+      const lolesportsApiKey = this.configService.getOrThrow<string>('LOLESPORTS_API_KEY')
+      matches = await fetchCompletedLckMatches(lolesportsApiKey)
       this.logger.log(`[Esports] ${matches.length}개 완료 경기 수집`)
     } catch (err) {
       this.logger.error(

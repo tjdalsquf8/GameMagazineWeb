@@ -3,8 +3,9 @@
 
 import { useState, useRef, useCallback } from 'react'
 import html2canvas from 'html2canvas'
-import { X, ChevronLeft, ChevronRight, Download, RefreshCw, Loader2 } from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Download, RefreshCw, Loader2, Upload, Link } from 'lucide-react'
 import { generateCardNews } from '@/lib/api/admin.api'
+import { useImageUpload } from '@/hooks/useImageUpload'
 import CardNewsSlide from './CardNewsSlide'
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 }
 
 type Status = 'idle' | 'loading' | 'done' | 'error'
+type InputMode = 'url' | 'file'
 
 /** 카드뉴스 생성 모달 컴포넌트 */
 export default function CardNewsModal({ articleId, articleTitle, onClose }: Props) {
@@ -21,8 +23,55 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
   const [slides, setSlides] = useState<string[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
+  const [inputMode, setInputMode] = useState<InputMode>('url')
+  const [uploadError, setUploadError] = useState('')
+  const [previewUrl, setPreviewUrl] = useState('')
   const [isDownloading, setIsDownloading] = useState(false)
   const slideRefs = useRef<(HTMLDivElement | null)[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const { upload, validate, isLoading: isUploading, progress } = useImageUpload()
+
+  /** 파일 선택 또는 드롭 시 R2 업로드 처리 */
+  const handleFileChange = useCallback(async (file: File) => {
+    setUploadError('')
+    const err = validate(file)
+    if (err) {
+      setUploadError(err)
+      return
+    }
+    const objectUrl = URL.createObjectURL(file)
+    setPreviewUrl(objectUrl)
+    try {
+      const publicUrl = await upload(file, undefined, 'editornews')
+      setImageUrl(publicUrl)
+      URL.revokeObjectURL(objectUrl)
+      setPreviewUrl(publicUrl)
+    } catch {
+      setUploadError('업로드에 실패했습니다. 다시 시도해 주세요.')
+      setPreviewUrl('')
+    }
+  }, [upload, validate])
+
+  /** 드래그 오버 기본 이벤트 차단 */
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+  }
+
+  /** 드롭 시 첫 번째 이미지 파일 처리 */
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file) handleFileChange(file)
+  }
+
+  /** 탭 전환 시 이미지 상태 초기화 */
+  const handleModeChange = (mode: InputMode) => {
+    setInputMode(mode)
+    setImageUrl('')
+    setPreviewUrl('')
+    setUploadError('')
+  }
 
   /** 슬라이드 생성 요청 — API 호출 후 상태 전환 */
   const handleGenerate = useCallback(async () => {
@@ -79,6 +128,9 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
     setStatus('idle')
     setSlides([])
     setCurrentIndex(0)
+    setImageUrl('')
+    setPreviewUrl('')
+    setUploadError('')
   }
 
   /** 모달 오버레이 클릭 시 닫기 */
@@ -112,30 +164,140 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
 
         {/* 모달 바디 */}
         <div className="px-5 py-5">
-          {/* idle: 이미지 URL 입력 + 생성 버튼 */}
+          {/* idle: 배경 이미지 입력 + 생성 버튼 */}
           {status === 'idle' && (
             <div className="space-y-4">
               <div>
-                <label
-                  htmlFor="card-image-url"
-                  className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5"
-                >
-                  뉴스 이미지 URL
+                <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+                  배경 이미지
                   <span className="ml-1 text-[var(--color-text-muted)] font-normal">(선택)</span>
-                </label>
-                <input
-                  id="card-image-url"
-                  type="url"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
-                  placeholder="뉴스 이미지 URL (선택)"
-                  className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-white dark:bg-gray-800 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                />
+                </p>
+
+                {/* URL / 파일 탭 */}
+                <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden mb-3">
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange('url')}
+                    className={[
+                      'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors',
+                      inputMode === 'url'
+                        ? 'bg-[var(--color-primary)] text-white'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
+                    ].join(' ')}
+                  >
+                    <Link size={12} />
+                    URL 입력
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleModeChange('file')}
+                    className={[
+                      'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors',
+                      inputMode === 'file'
+                        ? 'bg-[var(--color-primary)] text-white'
+                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
+                    ].join(' ')}
+                  >
+                    <Upload size={12} />
+                    파일 업로드
+                  </button>
+                </div>
+
+                {/* URL 입력 */}
+                {inputMode === 'url' && (
+                  <input
+                    id="card-image-url"
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                    className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-white dark:bg-gray-800 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                  />
+                )}
+
+                {/* 파일 업로드 */}
+                {inputMode === 'file' && (
+                  <div>
+                    {/* 업로드 전: 드롭존 */}
+                    {!previewUrl && !isUploading && (
+                      <div
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={handleDragOver}
+                        onDrop={handleDrop}
+                        className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-primary)] hover:bg-[var(--color-surface)] cursor-pointer transition-colors"
+                      >
+                        <Upload size={20} className="text-[var(--color-text-muted)]" />
+                        <p className="text-xs text-[var(--color-text-secondary)] text-center">
+                          클릭하거나 파일을 드래그해 주세요
+                          <br />
+                          <span className="text-[var(--color-text-muted)]">PNG, JPG, WEBP · 최대 10MB</span>
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 업로드 중: 진행률 바 */}
+                    {isUploading && (
+                      <div className="flex flex-col items-center justify-center gap-3 py-6">
+                        <Loader2 size={20} className="animate-spin text-[var(--color-primary)]" />
+                        <div className="w-full bg-[var(--color-border)] rounded-full h-1.5">
+                          <div
+                            className="bg-[var(--color-primary)] h-1.5 rounded-full transition-all"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-[var(--color-text-muted)]">{progress}%</p>
+                      </div>
+                    )}
+
+                    {/* 업로드 완료: 미리보기 + 재선택 */}
+                    {previewUrl && !isUploading && (
+                      <div className="relative rounded-lg overflow-hidden border border-[var(--color-border)]">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={previewUrl}
+                          alt="배경 이미지 미리보기"
+                          className="w-full h-32 object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewUrl('')
+                            setImageUrl('')
+                            fileInputRef.current?.click()
+                          }}
+                          className="absolute top-2 right-2 p-1 rounded-md bg-black/50 text-white hover:bg-black/70 transition-colors"
+                          aria-label="이미지 재선택"
+                        >
+                          <RefreshCw size={12} />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* 에러 메시지 */}
+                    {uploadError && (
+                      <p className="mt-1.5 text-xs text-red-500">{uploadError}</p>
+                    )}
+
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) handleFileChange(file)
+                        e.target.value = ''
+                      }}
+                    />
+                  </div>
+                )}
               </div>
+
               <button
                 type="button"
                 onClick={handleGenerate}
-                className="w-full py-2.5 rounded-lg bg-[var(--color-primary)] text-white text-sm font-medium hover:opacity-90 transition-opacity"
+                disabled={isUploading}
+                className="w-full py-2.5 rounded-lg bg-[var(--color-primary)] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
                 카드뉴스 생성하기
               </button>

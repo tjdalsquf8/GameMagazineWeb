@@ -129,6 +129,16 @@ export type ReportStatus = 'PENDING' | 'RESOLVED' | 'DISMISSED'
 /** 신고 대상 타입 */
 export type ReportTargetType = 'POST' | 'COMMENT'
 
+/** 정지 기간 */
+export type BanDuration = '7d' | '30d' | 'permanent'
+
+/** 피신고자 정지 이력 (기간별 횟수) */
+export interface BanHistory {
+  '7d': number
+  '30d': number
+  permanent: number
+}
+
 /** 어드민 신고 목록 항목 */
 export interface AdminReport {
   id: string
@@ -139,4 +149,10 @@ export interface AdminReport {
   reason: string
   status: ReportStatus
   createdAt: string
+  /** 피신고자 유저 ID (백엔드 구현 완료 후 반환) */
+  targetAuthorId?: string
+  /** 피신고자 닉네임 (백엔드 구현 완료 후 반환) */
+  targetAuthorNickname?: string
+  /** 피신고자 정지 이력 (백엔드 구현 완료 후 반환) */
+  banHistory?: BanHistory
 }

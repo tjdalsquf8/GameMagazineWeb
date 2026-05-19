@@ -1,13 +1,20 @@
+// comments.service.ts
+// 댓글 CRUD, 추천, 신고 비즈니스 로직을 담당하는 서비스
+
 import {
   Injectable,
   Logger,
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
+  HttpException,
 } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { CreateCommentDto } from './dto/create-comment.dto'
 import { UpdateCommentDto } from './dto/update-comment.dto'
+import { ReportDto } from '../posts/dto/report-post.dto'
 import { Role } from '@prisma/client'
 
 interface AuthUser {
@@ -43,6 +50,7 @@ export class CommentsService {
       where: {
         postId,
         parentId: null,
+        isHidden: false,
       },
       orderBy: { createdAt: 'asc' },
       select: {
@@ -54,6 +62,7 @@ export class CommentsService {
         author: { select: COMMENT_AUTHOR_SELECT },
         _count: { select: { commentRecommends: true } },
         replies: {
+          where: { isHidden: false },
           orderBy: { createdAt: 'asc' },
           select: {
             id: true,
@@ -95,7 +104,7 @@ export class CommentsService {
     }))
 
     const total = await this.prisma.comment.count({
-      where: { postId },
+      where: { postId, deletedAt: null, isHidden: false },
     })
 
     return { items: maskedComments, total }
@@ -184,7 +193,7 @@ export class CommentsService {
 
   async update(postId: number, commentId: number, dto: UpdateCommentDto, user: AuthUser) {
     const comment = await this.prisma.comment.findFirst({
-      where: { id: commentId, postId, deletedAt: null },
+      where: { id: commentId, postId, deletedAt: null, isHidden: false },
       select: { id: true, authorId: true },
     })
 
@@ -211,6 +220,49 @@ export class CommentsService {
 
     this.logger.log(`댓글 수정 완료: commentId=${commentId}, authorId=${user.id}`)
     return updated
+  }
+
+  /** 댓글 신고 — 자기 자신의 댓글 신고 불가, 중복 신고 불가 */
+  async reportComment(postId: number, commentId: number, dto: ReportDto, userId: string) {
+    try {
+      const comment = await this.prisma.comment.findFirst({
+        where: { id: commentId, postId, deletedAt: null },
+        select: { id: true, authorId: true },
+      })
+
+      if (!comment) {
+        throw new NotFoundException('댓글을 찾을 수 없습니다')
+      }
+
+      if (comment.authorId === userId) {
+        throw new BadRequestException('자신의 댓글은 신고할 수 없습니다')
+      }
+
+      const existing = await this.prisma.report.findFirst({
+        where: { type: 'COMMENT', targetId: commentId, reporterId: userId },
+        select: { id: true },
+      })
+
+      if (existing) {
+        throw new ConflictException('이미 신고한 댓글입니다')
+      }
+
+      await this.prisma.report.create({
+        data: {
+          type: 'COMMENT',
+          targetId: commentId,
+          reason: dto.reason,
+          reporterId: userId,
+        },
+      })
+
+      this.logger.log(`댓글 신고 접수: commentId=${commentId}, postId=${postId}, reporterId=${userId}`)
+      return { message: '신고가 접수되었습니다' }
+    } catch (e) {
+      if (e instanceof HttpException) throw e
+      this.logger.error(`reportComment(${commentId}) failed`, e instanceof Error ? e.stack : e)
+      throw new InternalServerErrorException('서버 오류가 발생했습니다')
+    }
   }
 
   async remove(postId: number, commentId: number, user: AuthUser) {

@@ -7,6 +7,7 @@ import type { Metadata } from 'next'
 import { ArticleHeader } from '@/app/news/[id]/_components/ArticleHeader'
 import { ArticleBody } from '@/app/news/[id]/_components/ArticleBody'
 import type { EditorPickItem } from '@/lib/api/editor-picks.api'
+import { env } from '@/lib/env'
 
 // 동적 파라미터 허용 — 빌드 시 알 수 없는 id에도 접근 가능
 export const dynamicParams = true
@@ -20,8 +21,7 @@ interface PageProps {
 
 // 에디터 픽 단건 서버 사이드 fetch — 404 또는 오류 시 null 반환
 async function fetchArticle(id: string): Promise<EditorPickItem | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
-  const res = await fetch(`${baseUrl}/api/editor-picks/${id}`, { next: { revalidate: 3600 } })
+  const res = await fetch(`${env.apiUrl}/api/editor-picks/${id}`, { next: { revalidate: 3600 } })
   if (!res.ok) return null
   const json = await res.json()
   if (!json.success) return null
