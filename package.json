@@ -19,6 +19,9 @@
     "pnpm": "^10.33.0",
     "rss-parser": "^3.13.0"
   },
+  "devDependencies": {
+    "next": "14.2.35"
+  },
   "pnpm": {
     "overrides": {
       "glob": ">=10.5.0"
