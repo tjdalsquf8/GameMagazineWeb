@@ -80,9 +80,15 @@ export default function ImageUploadModal({
         setImages((prev) => [...prev, { id, url: '', preview, progress: 0, status: 'uploading' }])
 
         try {
-          const publicUrl = await upload(file, (p) => {
-            setImages((prev) => prev.map((img) => (img.id === id ? { ...img, progress: p } : img)))
-          }, folder)
+          const publicUrl = await upload(
+            file,
+            (p) => {
+              setImages((prev) =>
+                prev.map((img) => (img.id === id ? { ...img, progress: p } : img))
+              )
+            },
+            folder
+          )
 
           // 업로드 완료 상태 갱신
           setImages((prev) =>

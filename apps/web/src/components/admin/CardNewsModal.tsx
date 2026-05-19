@@ -3,7 +3,16 @@
 
 import { useState, useRef, useCallback } from 'react'
 import html2canvas from 'html2canvas'
-import { X, ChevronLeft, ChevronRight, Download, RefreshCw, Loader2, Upload, Link } from 'lucide-react'
+import {
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  RefreshCw,
+  Loader2,
+  Upload,
+  Link,
+} from 'lucide-react'
 import { generateCardNews } from '@/lib/api/admin.api'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import CardNewsSlide from './CardNewsSlide'
@@ -33,25 +42,28 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
   const { upload, validate, isLoading: isUploading, progress } = useImageUpload()
 
   /** 파일 선택 또는 드롭 시 R2 업로드 처리 */
-  const handleFileChange = useCallback(async (file: File) => {
-    setUploadError('')
-    const err = validate(file)
-    if (err) {
-      setUploadError(err)
-      return
-    }
-    const objectUrl = URL.createObjectURL(file)
-    setPreviewUrl(objectUrl)
-    try {
-      const publicUrl = await upload(file, undefined, 'editornews')
-      setImageUrl(publicUrl)
-      URL.revokeObjectURL(objectUrl)
-      setPreviewUrl(publicUrl)
-    } catch {
-      setUploadError('업로드에 실패했습니다. 다시 시도해 주세요.')
-      setPreviewUrl('')
-    }
-  }, [upload, validate])
+  const handleFileChange = useCallback(
+    async (file: File) => {
+      setUploadError('')
+      const err = validate(file)
+      if (err) {
+        setUploadError(err)
+        return
+      }
+      const objectUrl = URL.createObjectURL(file)
+      setPreviewUrl(objectUrl)
+      try {
+        const publicUrl = await upload(file, undefined, 'editornews')
+        setImageUrl(publicUrl)
+        URL.revokeObjectURL(objectUrl)
+        setPreviewUrl(publicUrl)
+      } catch {
+        setUploadError('업로드에 실패했습니다. 다시 시도해 주세요.')
+        setPreviewUrl('')
+      }
+    },
+    [upload, validate]
+  )
 
   /** 드래그 오버 기본 이벤트 차단 */
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -215,7 +227,11 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                       className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-white dark:bg-gray-800 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
                     />
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      권장 해상도: <span className="font-medium text-[var(--color-text-secondary)]">1080 × 1350px (4:5 세로)</span> — 카드 전체를 꽉 채워 선명하게 출력됩니다.
+                      권장 해상도:{' '}
+                      <span className="font-medium text-[var(--color-text-secondary)]">
+                        1080 × 1350px (4:5 세로)
+                      </span>{' '}
+                      — 카드 전체를 꽉 채워 선명하게 출력됩니다.
                     </p>
                   </div>
                 )}
@@ -235,7 +251,9 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                         <p className="text-xs text-[var(--color-text-secondary)] text-center">
                           클릭하거나 파일을 드래그해 주세요
                           <br />
-                          <span className="text-[var(--color-text-muted)]">PNG, JPG, WEBP · 최대 10MB</span>
+                          <span className="text-[var(--color-text-muted)]">
+                            PNG, JPG, WEBP · 최대 10MB
+                          </span>
                         </p>
                       </div>
                     )}
@@ -281,14 +299,16 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                     {/* 해상도 힌트 */}
                     {!previewUrl && !isUploading && (
                       <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
-                        권장 해상도: <span className="font-medium text-[var(--color-text-secondary)]">1080 × 1350px (4:5 세로)</span> — 카드 전체를 꽉 채워 선명하게 출력됩니다.
+                        권장 해상도:{' '}
+                        <span className="font-medium text-[var(--color-text-secondary)]">
+                          1080 × 1350px (4:5 세로)
+                        </span>{' '}
+                        — 카드 전체를 꽉 채워 선명하게 출력됩니다.
                       </p>
                     )}
 
                     {/* 에러 메시지 */}
-                    {uploadError && (
-                      <p className="mt-1.5 text-xs text-red-500">{uploadError}</p>
-                    )}
+                    {uploadError && <p className="mt-1.5 text-xs text-red-500">{uploadError}</p>}
 
                     <input
                       ref={fileInputRef}

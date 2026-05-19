@@ -15,7 +15,14 @@ interface PresignedUrlResult {
 }
 
 // 업로드 대상 폴더 타입
-export type UploadFolder = 'posts' | 'profiles' | 'editornews' | 'news/pc' | 'news/mobile' | 'news/console' | 'news/esports'
+export type UploadFolder =
+  | 'posts'
+  | 'profiles'
+  | 'editornews'
+  | 'news/pc'
+  | 'news/mobile'
+  | 'news/console'
+  | 'news/esports'
 
 // 이미지 업로드 훅 반환 타입
 interface UseImageUploadReturn {
@@ -39,7 +46,11 @@ export function useImageUpload(): UseImageUploadReturn {
   }
 
   // presigned URL 발급 후 R2에 직접 PUT 업로드, publicUrl 반환
-  const upload = async (file: File, onProgress?: (p: number) => void, folder?: UploadFolder): Promise<string> => {
+  const upload = async (
+    file: File,
+    onProgress?: (p: number) => void,
+    folder?: UploadFolder
+  ): Promise<string> => {
     setIsLoading(true)
     setProgress(0)
     try {
@@ -83,7 +94,9 @@ export function useImageUpload(): UseImageUploadReturn {
       })
 
       // R2 업로드 완료 후 Magic Number 검증 요청
-      const verifyRes = await apiClient.post<{ verified: boolean }>('/api/uploads/verify', { publicUrl })
+      const verifyRes = await apiClient.post<{ verified: boolean }>('/api/uploads/verify', {
+        publicUrl,
+      })
       if (!verifyRes.success) {
         throw new Error('유효하지 않은 이미지 파일입니다.')
       }

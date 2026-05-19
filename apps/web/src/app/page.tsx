@@ -8,10 +8,7 @@ import { env } from '@/lib/env'
 // 초기 뉴스 데이터 서버 fetch 함수 — API 실패 시 빈 목록 반환
 async function fetchInitialNews(): Promise<NewsListResponse> {
   try {
-    const res = await fetch(
-      `${env.apiUrl}/api/news?limit=20`,
-      { next: { revalidate: 300 } }
-    )
+    const res = await fetch(`${env.apiUrl}/api/news?limit=20`, { next: { revalidate: 300 } })
     if (!res.ok) return { data: [], meta: { total: 0, page: 1, limit: 20 } }
     const json = await res.json()
     if (json.success && json.data) {

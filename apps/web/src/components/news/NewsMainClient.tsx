@@ -55,9 +55,7 @@ export function NewsMainClient({ initialNews }: NewsMainClientProps) {
         if (mainCategory !== '') params.set('mainCategory', mainCategory)
         if (subCategory !== null) params.set('subCategory', subCategory)
 
-        const res = await fetch(
-          `${env.apiUrl}/api/news?${params.toString()}`
-        )
+        const res = await fetch(`${env.apiUrl}/api/news?${params.toString()}`)
         if (!res.ok) {
           setNews([])
           return
@@ -152,7 +150,6 @@ export function NewsMainClient({ initialNews }: NewsMainClientProps) {
           onPageChange={handlePageChange}
         />
       </div>
-
     </div>
   )
 }

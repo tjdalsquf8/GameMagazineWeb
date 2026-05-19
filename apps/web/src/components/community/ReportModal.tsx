@@ -72,17 +72,16 @@ export default function ReportModal({
       {/* 배경 오버레이 */}
       <div
         className="absolute inset-0 bg-black/50"
-        onClick={() => { if (!isSubmitting) onClose() }}
+        onClick={() => {
+          if (!isSubmitting) onClose()
+        }}
       />
 
       {/* 모달 패널 */}
       <div className="relative w-full max-w-md bg-surface rounded-lg shadow-xl border border-border">
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2
-            id="report-modal-title"
-            className="text-base font-semibold text-text-primary"
-          >
+          <h2 id="report-modal-title" className="text-base font-semibold text-text-primary">
             {title}
           </h2>
           <button

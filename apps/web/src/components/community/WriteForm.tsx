@@ -69,7 +69,8 @@ export default function WriteForm() {
   const isContentOverLimit = content.length > MAX_CONTENT_LENGTH
   // 카운터 표시용 — HTML 태그 제거한 실제 텍스트 길이 (브라우저가 남기는 <br> 등 제외)
   const visibleContentLength = content.replace(/<[^>]*>/g, '').trim().length
-  const isSubmitEnabled = categoryId !== '' && title.trim() !== '' && !isSubmitting && !isContentOverLimit
+  const isSubmitEnabled =
+    categoryId !== '' && title.trim() !== '' && !isSubmitting && !isContentOverLimit
 
   /** 게시글 등록 처리 — content를 sanitize 후 전송 */
   const handleSubmit = async () => {

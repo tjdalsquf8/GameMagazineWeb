@@ -10,7 +10,12 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useToastStore } from '@/store/toastStore'
-import { deleteComment, updateComment, toggleCommentRecommend, reportComment } from '@/lib/api/posts'
+import {
+  deleteComment,
+  updateComment,
+  toggleCommentRecommend,
+  reportComment,
+} from '@/lib/api/posts'
 import RecommendButton from '@/components/community/RecommendButton'
 import ReportModal from '@/components/community/ReportModal'
 import type { Comment, Reply } from '@/types/community'
@@ -31,7 +36,14 @@ interface ReplyItemProps {
 }
 
 /** 대댓글 단일 아이템 — 삭제 및 인라인 수정 기능, 추천 버튼, 신고 버튼 포함 */
-function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted, onLoginRequired }: ReplyItemProps) {
+function ReplyItem({
+  reply,
+  postId,
+  currentUserId,
+  accessToken,
+  onDeleted,
+  onLoginRequired,
+}: ReplyItemProps) {
   const { showToast } = useToastStore()
   const isDeleted = reply.isDeleted || reply.deletedAt !== null
   const isOwn = !isDeleted && reply.author?.id === currentUserId
@@ -225,7 +237,10 @@ function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted, onLog
               <button
                 type="button"
                 onClick={() => {
-                  if (!accessToken) { onLoginRequired(); return }
+                  if (!accessToken) {
+                    onLoginRequired()
+                    return
+                  }
                   setIsReportModalOpen(true)
                 }}
                 className="text-xs text-text-muted hover:text-red-500 transition-colors"
@@ -464,7 +479,10 @@ export default function CommentItem({
               <button
                 type="button"
                 onClick={() => {
-                  if (!accessToken) { router.push('/login'); return }
+                  if (!accessToken) {
+                    router.push('/login')
+                    return
+                  }
                   setIsReportModalOpen(true)
                 }}
                 className="text-xs text-text-muted hover:text-red-500 transition-colors"

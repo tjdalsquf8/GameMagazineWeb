@@ -158,9 +158,7 @@ export default function RegisterStep2({ email, onNext, onBack }: RegisterStep2Pr
       {/* 잠금 안내 박스 (5회 실패 시 표시) */}
       {lockRemainingMs > 0 && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-3">
-          <p className="text-sm text-amber-700 font-medium">
-            인증 코드 5회 오류로 잠겼습니다.
-          </p>
+          <p className="text-sm text-amber-700 font-medium">인증 코드 5회 오류로 잠겼습니다.</p>
           <p className="text-sm text-amber-600 mt-0.5">
             {formatMs(lockRemainingMs)} 후 다시 인증을 시도해주세요.
           </p>

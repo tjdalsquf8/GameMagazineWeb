@@ -96,8 +96,9 @@ async function request<T>(
 
   // 403 인터셉터 — 정지 계정: 메시지 표시 후 로그아웃
   if (res.status === 403) {
-    const json = await res.json() as ApiResponse<T>
-    const message = (!json.success && json.error?.message) ? json.error.message : '계정이 정지되었습니다'
+    const json = (await res.json()) as ApiResponse<T>
+    const message =
+      !json.success && json.error?.message ? json.error.message : '계정이 정지되었습니다'
     useToastStore.getState().showToast(message, 'error')
     useAuthStore.getState().clearAuth()
     window.location.href = '/login'

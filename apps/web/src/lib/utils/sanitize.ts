@@ -16,10 +16,31 @@ export function sanitizeHTML(dirty: string): string {
 
 // 카드뉴스 전용 sanitize — 관리자 전용 AI 생성 콘텐츠이므로 인라인 style 허용
 const CARD_ALLOWED_TAGS = [
-  'p', 'br', 'img', 'strong', 'em', 'u', 'b', 'i',
-  'div', 'span', 'section', 'article', 'header', 'footer',
-  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-  'ul', 'ol', 'li', 'figure', 'figcaption',
+  'p',
+  'br',
+  'img',
+  'strong',
+  'em',
+  'u',
+  'b',
+  'i',
+  'div',
+  'span',
+  'section',
+  'article',
+  'header',
+  'footer',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+  'ul',
+  'ol',
+  'li',
+  'figure',
+  'figcaption',
 ]
 const CARD_ALLOWED_ATTR = ['src', 'alt', 'class', 'style', 'width', 'height']
 
