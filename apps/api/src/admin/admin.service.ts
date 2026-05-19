@@ -7,8 +7,10 @@ import {
   NotFoundException,
   ConflictException,
   InternalServerErrorException,
+  BadRequestException,
   Inject,
 } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import Anthropic from "@anthropic-ai/sdk";
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Cache } from "cache-manager";
@@ -34,11 +36,12 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly newsService: NewsService,
+    private readonly configService: ConfigService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {
     // Anthropic 클라이언트 초기화
     this.anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+      apiKey: this.configService.getOrThrow<string>('ANTHROPIC_API_KEY'),
     });
   }
 
@@ -253,13 +256,14 @@ export class AdminService {
 
   // 파이프라인 로그 페이지네이션 조회 — 프론트엔드 타입에 맞게 shape 매핑 후 반환
   async getPipelineLogs(page: number, limit: number) {
-    const skip = (page - 1) * limit;
+    const safeLimit = Math.min(limit, 100)
+    const skip = (page - 1) * safeLimit;
     const [total, items] = await Promise.all([
       this.prisma.pipelineLog.count(),
       this.prisma.pipelineLog.findMany({
         orderBy: { runAt: "desc" },
         skip,
-        take: limit,
+        take: safeLimit,
       }),
     ]);
 
@@ -278,7 +282,7 @@ export class AdminService {
       executedAt: l.runAt.toISOString(),
     }));
 
-    return { data: mapped, meta: { total, page, limit } };
+    return { data: mapped, meta: { total, page, limit: safeLimit } };
   }
 
   // ============================
@@ -293,7 +297,8 @@ export class AdminService {
     limit = 20,
     sourceName?: string,
   ) {
-    const skip = (page - 1) * limit;
+    const safeLimit = Math.min(limit, 100)
+    const skip = (page - 1) * safeLimit;
 
     // DB는 'PC' | 'Mobile' | 'Console' | 'Esports' 형태로 저장 — 프론트 대문자 값을 DB 형태로 정규화
     const CATEGORY_MAP: Record<string, string> = {
@@ -309,7 +314,7 @@ export class AdminService {
     // DB NewsStatus enum에 없는 값(FAILED, PENDING 등)은 빈 결과 반환 — Prisma 에러 방지
     const VALID_STATUSES: string[] = Object.values(NewsStatus);
     if (status && !VALID_STATUSES.includes(status)) {
-      return { data: [], meta: { total: 0, page, limit } };
+      return { data: [], meta: { total: 0, page, limit: safeLimit } };
     }
 
     const where = {
@@ -323,7 +328,7 @@ export class AdminService {
         where,
         orderBy: { createdAt: "desc" },
         skip,
-        take: limit,
+        take: safeLimit,
         select: {
           id: true,
           mainCategory: true,
@@ -355,7 +360,7 @@ export class AdminService {
       publishedAt: item.createdAt.toISOString(),
     }));
 
-    return { data: mapped, meta: { total, page, limit } };
+    return { data: mapped, meta: { total, page, limit: safeLimit } };
   }
 
   // 기사 숨김 처리
@@ -477,7 +482,8 @@ export class AdminService {
 
   // 유저 목록 조회 — 검색 및 페이지네이션
   async getUsers(page = 1, limit = 20, search?: string) {
-    const skip = (page - 1) * limit;
+    const safeLimit = Math.min(limit, 100)
+    const skip = (page - 1) * safeLimit;
     const where = search
       ? {
           OR: [
@@ -492,7 +498,7 @@ export class AdminService {
         where,
         orderBy: { createdAt: "desc" },
         skip,
-        take: limit,
+        take: safeLimit,
         select: {
           id: true,
           email: true,
@@ -507,55 +513,82 @@ export class AdminService {
         },
       }),
     ]);
-    return { data: items, meta: { total, page, limit } };
+    return { data: items, meta: { total, page, limit: safeLimit } };
   }
 
-  // 유저 정지 처리
-  async banUser(id: string, dto: BanUserDto) {
+  // 유저 정지 처리 — 정지 이력(BanHistory)을 함께 생성하고 트랜잭션으로 처리
+  async banUser(id: string, dto: BanUserDto, actorId: string) {
+    // 자기 자신에 대한 작업 방지
+    if (id === actorId) {
+      throw new BadRequestException('자기 자신에게 해당 작업을 수행할 수 없습니다')
+    }
+
     await this.findUserOrThrow(id);
-    const bannedUntil =
-      dto.duration === "permanent"
-        ? null
-        : new Date(Date.now() + dto.duration * 24 * 60 * 60 * 1000);
-    await this.prisma.user.update({
-      where: { id },
-      data: {
-        isBanned: true,
-        bannedUntil,
-        banReason: dto.reason,
-      },
-    });
-    this.logger.log(`[Admin] 유저 정지: ${id} — ${dto.reason}`);
-    return { message: "유저를 정지했습니다" };
+
+    // duration 문자열을 일수로 변환 — permanent는 null
+    const durationDays =
+      dto.duration === 'permanent' ? null : dto.duration === '7d' ? 7 : 30
+    const bannedUntil = durationDays
+      ? new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000)
+      : null
+
+    // 유저 정지 업데이트와 BanHistory 생성을 트랜잭션으로 처리 (adminId로 행위자 기록)
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id },
+        data: { isBanned: true, bannedUntil, banReason: dto.reason },
+      }),
+      this.prisma.banHistory.create({
+        data: { userId: id, duration: dto.duration, reason: dto.reason, bannedUntil, adminId: actorId },
+      }),
+    ])
+
+    this.logger.log(`[Admin] 유저 정지: targetId=${id} actorId=${actorId} — ${dto.duration} — ${dto.reason}`)
+    return { message: '유저를 정지했습니다' }
   }
 
   // 유저 정지 해제
-  async unbanUser(id: string) {
+  async unbanUser(id: string, actorId: string) {
+    // 자기 자신에 대한 작업 방지
+    if (id === actorId) {
+      throw new BadRequestException('자기 자신에게 해당 작업을 수행할 수 없습니다')
+    }
+
     await this.findUserOrThrow(id);
     await this.prisma.user.update({
       where: { id },
       data: { isBanned: false, bannedUntil: null, banReason: null },
     });
-    this.logger.log(`[Admin] 유저 정지 해제: ${id}`);
+    this.logger.log(`[Admin] 유저 정지 해제: targetId=${id} actorId=${actorId}`);
     return { message: "유저 정지를 해제했습니다" };
   }
 
   // 유저 역할 변경
-  async updateRole(id: string, dto: UpdateRoleDto) {
+  async updateRole(id: string, dto: UpdateRoleDto, actorId: string) {
+    // 자기 자신에 대한 작업 방지
+    if (id === actorId) {
+      throw new BadRequestException('자기 자신에게 해당 작업을 수행할 수 없습니다')
+    }
+
     await this.findUserOrThrow(id);
     await this.prisma.user.update({
       where: { id },
       data: { role: dto.role as "USER" | "ADMIN" },
     });
-    this.logger.log(`[Admin] 유저 역할 변경: ${id} → ${dto.role}`);
+    this.logger.log(`[Admin] 유저 역할 변경: targetId=${id} actorId=${actorId} → ${dto.role}`);
     return { message: "역할을 변경했습니다" };
   }
 
   // 유저 삭제
-  async deleteUser(id: string) {
+  async deleteUser(id: string, actorId: string) {
+    // 자기 자신에 대한 작업 방지
+    if (id === actorId) {
+      throw new BadRequestException('자기 자신에게 해당 작업을 수행할 수 없습니다')
+    }
+
     await this.findUserOrThrow(id);
     await this.prisma.user.delete({ where: { id } });
-    this.logger.log(`[Admin] 유저 삭제: ${id}`);
+    this.logger.log(`[Admin] 유저 삭제: targetId=${id} actorId=${actorId}`);
     return { message: "유저를 삭제했습니다" };
   }
 
@@ -563,7 +596,6 @@ export class AdminService {
   // 게시물 관리
   // ============================
 
-  // 게시물 목록 조회 — 검색, 카테고리 필터, 페이지네이션
   // 게시물 목록 조회 — 카테고리·삭제 여부 필터, 검색, 페이지네이션 지원
   async getPosts(
     page = 1,
@@ -573,7 +605,8 @@ export class AdminService {
     parentCategoryId?: string,
     categoryId?: string,
   ) {
-    const skip = (page - 1) * limit;
+    const safeLimit = Math.min(limit, 100)
+    const skip = (page - 1) * safeLimit;
 
     // isDeleted 필터: 'true' → 삭제됨만, 'false' → 정상만, 그 외 → 전체
     const deletedFilter =
@@ -611,7 +644,7 @@ export class AdminService {
         where,
         orderBy: { createdAt: "desc" },
         skip,
-        take: limit,
+        take: safeLimit,
         include: {
           author: { select: { nickname: true } },
           category: { include: { parent: { select: { id: true } } } },
@@ -634,7 +667,7 @@ export class AdminService {
       createdAt: p.createdAt.toISOString(),
     }));
 
-    return { data: mapped, meta: { total, page, limit } };
+    return { data: mapped, meta: { total, page, limit: safeLimit } };
   }
 
   // 게시물 복구 — deletedAt 제거 및 상태 PUBLISHED로 복원
@@ -693,75 +726,123 @@ export class AdminService {
   // 신고 관리
   // ============================
 
-  // 신고 목록 조회 — 상태 필터 및 페이지네이션, 대상 게시물/댓글 미리보기 포함 후 프론트엔드 타입에 맞게 shape 매핑
+  // 신고 목록 조회 — 상태 필터 및 페이지네이션, 대상 게시물/댓글 미리보기 + 피신고자 정보 + BanHistory 집계 반환
   async getReports(page = 1, limit = 20, status?: string) {
-    const skip = (page - 1) * limit;
+    const safeLimit = Math.min(limit, 100)
+    const skip = (page - 1) * safeLimit
     // DISMISSED는 DB상 REJECTED로 저장되어 있으므로 변환
-    const dbStatus = status === "DISMISSED" ? "REJECTED" : status;
-    const where = dbStatus && dbStatus !== "ALL" ? { status: dbStatus } : {};
+    const dbStatus = status === 'DISMISSED' ? 'REJECTED' : status
+    const where = dbStatus && dbStatus !== 'ALL' ? { status: dbStatus } : {}
     const [total, items] = await Promise.all([
       this.prisma.report.count({ where }),
       this.prisma.report.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: safeLimit,
         include: {
           reporter: { select: { id: true, nickname: true, email: true } },
         },
       }),
-    ]);
+    ])
 
     // 대상 게시물/댓글 미리보기 조회
-    const postIds = items
-      .filter((r) => r.type === "POST")
-      .map((r) => r.targetId);
-    const commentIds = items
-      .filter((r) => r.type === "COMMENT")
-      .map((r) => r.targetId);
+    const postIds = items.filter((r) => r.type === 'POST').map((r) => r.targetId)
+    const commentIds = items.filter((r) => r.type === 'COMMENT').map((r) => r.targetId)
 
+    // post/comment ID 배열로 배치 조회 — 각 타입당 쿼리 1회씩만 실행, 피신고자 authorId 포함
     const [posts, comments] = await Promise.all([
-      postIds.length > 0
-        ? this.prisma.post.findMany({
-            where: { id: { in: postIds } },
-            select: { id: true, title: true },
-          })
-        : Promise.resolve([]),
-      commentIds.length > 0
-        ? this.prisma.comment.findMany({
-            where: { id: { in: commentIds } },
-            select: { id: true, content: true },
-          })
-        : Promise.resolve([]),
-    ]);
+      this.prisma.post.findMany({
+        where: { id: { in: postIds } },
+        select: { id: true, title: true, authorId: true },
+      }),
+      this.prisma.comment.findMany({
+        where: { id: { in: commentIds } },
+        select: { id: true, content: true, authorId: true },
+      }),
+    ])
 
-    const postMap = new Map(posts.map((p) => [p.id, p.title]));
-    const commentMap = new Map(
-      comments.map((c) => [c.id, c.content.slice(0, 60)]),
-    );
+    // 피신고자 authorId 수집 (중복 제거)
+    const postAuthorMap = new Map(posts.map((p) => [p.id, p.authorId]))
+    const commentAuthorMap = new Map(comments.map((c) => [c.id, c.authorId]))
 
-    const mapped = items.map((r) => ({
-      id: String(r.id),
-      targetType: r.type,
-      targetId: r.targetId,
-      targetPreview:
-        r.type === "POST"
-          ? (postMap.get(r.targetId) ?? "")
-          : (commentMap.get(r.targetId) ?? ""),
-      reporterNickname: r.reporter.nickname ?? r.reporter.email,
-      reason: r.reason,
-      // REJECTED → DISMISSED 매핑
-      status: r.status === "REJECTED" ? "DISMISSED" : r.status,
-      createdAt: r.createdAt.toISOString(),
-    }));
+    const authorIds = [
+      ...new Set([
+        ...posts.map((p) => p.authorId).filter((id): id is string => id !== null),
+        ...comments.map((c) => c.authorId).filter((id): id is string => id !== null),
+      ]),
+    ]
 
-    return { data: mapped, meta: { total, page, limit } };
+    // 피신고자 닉네임 및 BanHistory 배치 조회 — N+1 방지
+    const [authorUsers, banHistories] = await Promise.all([
+      this.prisma.user.findMany({
+        where: { id: { in: authorIds } },
+        select: { id: true, nickname: true },
+      }),
+      this.prisma.banHistory.findMany({
+        where: { userId: { in: authorIds } },
+        select: { userId: true, duration: true },
+      }),
+    ])
+
+    // 피신고자 Map
+    const authorNicknameMap = new Map(authorUsers.map((u) => [u.id, u.nickname]))
+
+    // BanHistory duration별 집계 Map<userId, { '7d': number, '30d': number, permanent: number }>
+    const banCountMap = new Map<string, { '7d': number; '30d': number; permanent: number }>()
+    for (const bh of banHistories) {
+      if (!banCountMap.has(bh.userId)) {
+        banCountMap.set(bh.userId, { '7d': 0, '30d': 0, permanent: 0 })
+      }
+      const counts = banCountMap.get(bh.userId)!
+      if (bh.duration === '7d') counts['7d'] += 1
+      else if (bh.duration === '30d') counts['30d'] += 1
+      else if (bh.duration === 'permanent') counts['permanent'] += 1
+    }
+
+    const defaultBanCount = { '7d': 0, '30d': 0, permanent: 0 }
+
+    const postMap = new Map(posts.map((p) => [p.id, p.title]))
+    const commentMap = new Map(comments.map((c) => [c.id, c.content.slice(0, 60)]))
+
+    const mapped = items.map((r) => {
+      const authorId =
+        r.type === 'POST'
+          ? (postAuthorMap.get(r.targetId) ?? null)
+          : (commentAuthorMap.get(r.targetId) ?? null)
+
+      return {
+        id: String(r.id),
+        targetType: r.type,
+        targetId: r.targetId,
+        targetPreview:
+          r.type === 'POST'
+            ? (postMap.get(r.targetId) ?? '')
+            : (commentMap.get(r.targetId) ?? ''),
+        reporterNickname: r.reporter.nickname ?? r.reporter.email,
+        reason: r.reason,
+        // REJECTED → DISMISSED 매핑
+        status: r.status === 'REJECTED' ? 'DISMISSED' : r.status,
+        createdAt: r.createdAt.toISOString(),
+        // 피신고자 정보
+        targetAuthorId: authorId,
+        targetAuthorNickname: authorId ? (authorNicknameMap.get(authorId) ?? null) : null,
+        banHistory: authorId ? (banCountMap.get(authorId) ?? defaultBanCount) : defaultBanCount,
+      }
+    })
+
+    return { data: mapped, meta: { total, page, limit: safeLimit } }
   }
 
-  // 신고 처리 — resolve: 게시물/댓글 숨김 처리 후 신고 상태 변경 (트랜잭션)
+  // 신고 처리 — resolve: 게시물/댓글 숨김 처리 후 신고 상태 변경 (트랜잭션, Race Condition 방지)
   async handleReport(id: number, dto: HandleReportDto) {
     const report = await this.prisma.report.findUnique({ where: { id } });
     if (!report) throw new NotFoundException("신고를 찾을 수 없습니다");
+
+    // 이미 처리된 신고 — 동시 처리 시 중복 실행 방지
+    if (report.status !== 'PENDING') {
+      throw new ConflictException('이미 처리된 신고입니다')
+    }
 
     if (dto.action === "resolve") {
       // 트랜잭션으로 게시물/댓글 숨김 + 신고 상태 변경 처리

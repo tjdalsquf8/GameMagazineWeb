@@ -27,7 +27,6 @@ import { AdminGuard } from '../admin/guards/admin.guard'
 interface AdminRequest extends Request {
   user: {
     sub: string
-    email: string
     role: string
   }
 }

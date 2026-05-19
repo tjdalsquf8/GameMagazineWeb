@@ -43,16 +43,29 @@ function decodeEntities(str: string): string {
     .trim()
 }
 
+// RSS 피드 최대 허용 크기 — 5MB 초과 시 거부
+const MAX_FEED_SIZE_BYTES = 5 * 1024 * 1024
+
 // 지정된 피드 소스에서 RSS를 파싱하여 RawArticle 배열로 반환
+// maxRedirects: 3 — 무한 리다이렉트 방어, 파싱된 피드 5MB 초과 시 오류 처리
 export async function collectFeed(source: FeedSource): Promise<RawArticle[]> {
   const parser = new Parser({
     customFields: {
       item: ['content:encoded', 'description'],
     },
     timeout: 10000,
+    maxRedirects: 3,
   })
 
   const feed = await parser.parseURL(source.url)
+
+  // 대용량 응답 방어 — 파싱된 피드 직렬화 크기가 5MB를 초과하면 처리 거부
+  const feedSize = Buffer.byteLength(JSON.stringify(feed), 'utf8')
+  if (feedSize > MAX_FEED_SIZE_BYTES) {
+    throw new Error(
+      `[${source.name}] 피드 크기 초과: ${(feedSize / 1024 / 1024).toFixed(2)}MB (최대 5MB)`,
+    )
+  }
 
   return feed.items.map((item) => {
     const rawContent =

@@ -16,6 +16,7 @@ interface DeleteAccountModalProps {
 /** 회원 탈퇴 확인 모달 컴포넌트 */
 export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps) {
   const [confirmText, setConfirmText] = useState('')
+  const [password, setPassword] = useState('')
   const router = useRouter()
   const clearAuth = useAuthStore((s) => s.clearAuth)
 
@@ -29,7 +30,7 @@ export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountMod
   const { mutate, isLoading } = useDeleteAccount(handleSuccess)
 
   const CONFIRM_KEYWORD = '탈퇴'
-  const isConfirmed = confirmText === CONFIRM_KEYWORD
+  const isConfirmed = confirmText === CONFIRM_KEYWORD && password.trim() !== ''
 
   if (!isOpen) return null
 
@@ -75,7 +76,7 @@ export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountMod
         </div>
 
         {/* 탈퇴 확인 입력 */}
-        <div className="mb-5">
+        <div className="mb-4">
           <label
             htmlFor="confirm-delete"
             className="block text-sm text-[var(--color-text-secondary)] mb-1.5"
@@ -95,6 +96,25 @@ export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountMod
           />
         </div>
 
+        {/* 비밀번호 재확인 입력 */}
+        <div className="mb-5">
+          <label
+            htmlFor="confirm-password"
+            className="block text-sm text-[var(--color-text-secondary)] mb-1.5"
+          >
+            비밀번호를 입력해 주세요.
+          </label>
+          <input
+            id="confirm-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="현재 비밀번호"
+            disabled={isLoading}
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-background text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] outline-none focus:border-red-400 transition-colors"
+          />
+        </div>
+
         {/* 버튼 그룹 */}
         <div className="flex gap-2 justify-end">
           <button
@@ -107,7 +127,7 @@ export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountMod
           </button>
           <button
             type="button"
-            onClick={() => mutate()}
+            onClick={() => mutate(password)}
             disabled={isLoading || !isConfirmed}
             className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >

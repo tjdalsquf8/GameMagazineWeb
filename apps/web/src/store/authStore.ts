@@ -39,8 +39,8 @@ export const useAuthStore = create<AuthState>()(
       name: 'auth-storage',
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
         isAuthenticated: state.isAuthenticated,
+        // accessToken은 메모리에만 유지 — localStorage 저장 제외 (XSS 토큰 탈취 방지)
       }),
     }
   )

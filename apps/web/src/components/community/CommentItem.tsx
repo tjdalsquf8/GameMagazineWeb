@@ -7,10 +7,12 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useToastStore } from '@/store/toastStore'
-import { deleteComment, updateComment, toggleCommentRecommend } from '@/lib/api/posts'
+import { deleteComment, updateComment, toggleCommentRecommend, reportComment } from '@/lib/api/posts'
 import RecommendButton from '@/components/community/RecommendButton'
+import ReportModal from '@/components/community/ReportModal'
 import type { Comment, Reply } from '@/types/community'
 
 /** ISO 날짜 문자열을 'YYYY.MM.DD HH:mm' 형식으로 변환 */
@@ -25,10 +27,11 @@ interface ReplyItemProps {
   currentUserId: string | null
   accessToken: string | null
   onDeleted: () => void
+  onLoginRequired: () => void
 }
 
-/** 대댓글 단일 아이템 — 삭제 및 인라인 수정 기능, 추천 버튼 포함 */
-function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted }: ReplyItemProps) {
+/** 대댓글 단일 아이템 — 삭제 및 인라인 수정 기능, 추천 버튼, 신고 버튼 포함 */
+function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted, onLoginRequired }: ReplyItemProps) {
   const { showToast } = useToastStore()
   const isDeleted = reply.isDeleted || reply.deletedAt !== null
   const isOwn = !isDeleted && reply.author?.id === currentUserId
@@ -41,6 +44,9 @@ function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted }: Rep
   const [recommended, setRecommended] = useState(reply.isRecommended ?? false)
   const [recommendCount, setRecommendCount] = useState(reply.recommendCount ?? 0)
   const [isRecommending, setIsRecommending] = useState(false)
+
+  // 신고 모달 상태
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   /** 수정 버튼 클릭 — 편집 모드 진입 */
   const handleEditStart = () => {
@@ -115,6 +121,26 @@ function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted }: Rep
     }
   }
 
+  /** 대댓글 신고 — 비로그인 시 로그인 페이지로 이동, 중복 신고 개별 메시지 처리 */
+  const handleReport = async (reason: string) => {
+    if (!accessToken) {
+      onLoginRequired()
+      return
+    }
+    try {
+      await reportComment(postId, reply.id, reason, accessToken)
+      showToast('신고가 접수되었습니다', 'success')
+    } catch (err) {
+      const code = (err as { code?: string }).code
+      if (code === 'CONFLICT' || (err instanceof Error && err.message.includes('이미'))) {
+        showToast('이미 신고한 댓글입니다', 'error')
+      } else {
+        showToast('신고 접수에 실패했습니다. 다시 시도해주세요', 'error')
+      }
+      throw err
+    }
+  }
+
   return (
     <div className="pl-6 border-l-2 border-border mt-3">
       <div className="flex items-center gap-2 mb-1">
@@ -168,6 +194,7 @@ function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted }: Rep
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             rows={3}
+            maxLength={1000}
             className="w-full text-sm text-text-primary bg-surface border border-border rounded px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <div className="flex gap-2 mt-1">
@@ -192,8 +219,22 @@ function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted }: Rep
       ) : (
         <>
           <p className="text-sm text-text-secondary leading-relaxed">{reply.content}</p>
-          {/* 삭제되지 않은 대댓글에만 추천 버튼 표시 */}
-          <div className="flex justify-end mt-2">
+          {/* 삭제되지 않은 대댓글에만 추천/신고 버튼 표시 */}
+          <div className="flex items-center justify-between mt-2">
+            {!isOwn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!accessToken) { onLoginRequired(); return }
+                  setIsReportModalOpen(true)
+                }}
+                className="text-xs text-text-muted hover:text-red-500 transition-colors"
+              >
+                신고
+              </button>
+            ) : (
+              <span />
+            )}
             <RecommendButton
               recommended={recommended}
               recommendCount={recommendCount}
@@ -202,6 +243,12 @@ function ReplyItem({ reply, postId, currentUserId, accessToken, onDeleted }: Rep
               size="sm"
             />
           </div>
+          <ReportModal
+            isOpen={isReportModalOpen}
+            onClose={() => setIsReportModalOpen(false)}
+            onSubmit={handleReport}
+            title="댓글 신고하기"
+          />
         </>
       )}
     </div>
@@ -215,13 +262,14 @@ interface CommentItemProps {
   onDeleted: () => void
 }
 
-/** 댓글 단일 아이템 — 삭제 및 인라인 수정 기능, 대댓글 목록 렌더링, 추천 버튼 포함 */
+/** 댓글 단일 아이템 — 삭제 및 인라인 수정 기능, 대댓글 목록 렌더링, 추천/신고 버튼 포함 */
 export default function CommentItem({
   comment,
   postId,
   currentUserId,
   onDeleted,
 }: CommentItemProps) {
+  const router = useRouter()
   const { accessToken } = useAuth()
   const { showToast } = useToastStore()
   const isDeleted = comment.isDeleted || comment.deletedAt !== null
@@ -235,6 +283,9 @@ export default function CommentItem({
   const [recommended, setRecommended] = useState(comment.isRecommended ?? false)
   const [recommendCount, setRecommendCount] = useState(comment.recommendCount ?? 0)
   const [isRecommending, setIsRecommending] = useState(false)
+
+  // 신고 모달 상태
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   /** 수정 버튼 클릭 — 편집 모드 진입 */
   const handleEditStart = () => {
@@ -309,6 +360,26 @@ export default function CommentItem({
     }
   }
 
+  /** 댓글 신고 — 비로그인 시 로그인 페이지로 이동, 중복 신고 개별 메시지 처리 */
+  const handleReport = async (reason: string) => {
+    if (!accessToken) {
+      router.push('/login')
+      return
+    }
+    try {
+      await reportComment(postId, comment.id, reason, accessToken)
+      showToast('신고가 접수되었습니다', 'success')
+    } catch (err) {
+      const code = (err as { code?: string }).code
+      if (code === 'CONFLICT' || (err instanceof Error && err.message.includes('이미'))) {
+        showToast('이미 신고한 댓글입니다', 'error')
+      } else {
+        showToast('신고 접수에 실패했습니다. 다시 시도해주세요', 'error')
+      }
+      throw err
+    }
+  }
+
   return (
     <div className="py-4 border-b border-border last:border-b-0">
       <div className="flex items-center gap-2 mb-1">
@@ -362,6 +433,7 @@ export default function CommentItem({
             value={editText}
             onChange={(e) => setEditText(e.target.value)}
             rows={3}
+            maxLength={1000}
             className="w-full text-sm text-text-primary bg-surface border border-border rounded px-3 py-2 resize-none focus:outline-none focus:ring-1 focus:ring-primary"
           />
           <div className="flex gap-2 mt-1">
@@ -386,8 +458,22 @@ export default function CommentItem({
       ) : (
         <>
           <p className="text-sm text-text-secondary leading-relaxed">{comment.content}</p>
-          {/* 삭제되지 않은 댓글에만 추천 버튼 표시 — 우측 하단 배치 */}
-          <div className="flex justify-end mt-2">
+          {/* 삭제되지 않은 댓글에만 신고/추천 버튼 표시 */}
+          <div className="flex items-center justify-between mt-2">
+            {!isOwn ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!accessToken) { router.push('/login'); return }
+                  setIsReportModalOpen(true)
+                }}
+                className="text-xs text-text-muted hover:text-red-500 transition-colors"
+              >
+                신고
+              </button>
+            ) : (
+              <span />
+            )}
             <RecommendButton
               recommended={recommended}
               recommendCount={recommendCount}
@@ -396,6 +482,12 @@ export default function CommentItem({
               size="sm"
             />
           </div>
+          <ReportModal
+            isOpen={isReportModalOpen}
+            onClose={() => setIsReportModalOpen(false)}
+            onSubmit={handleReport}
+            title="댓글 신고하기"
+          />
         </>
       )}
       {comment.replies.map((reply) => (
@@ -406,6 +498,7 @@ export default function CommentItem({
           currentUserId={currentUserId}
           accessToken={accessToken}
           onDeleted={onDeleted}
+          onLoginRequired={() => router.push('/login')}
         />
       ))}
     </div>

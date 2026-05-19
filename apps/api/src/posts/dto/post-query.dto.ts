@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsOptional, IsString, Min, MinLength } from 'class-validator'
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength } from 'class-validator'
 import { Transform, Type } from 'class-transformer'
 
 export enum PostSortOption {
@@ -18,6 +18,7 @@ export class PostQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 20
 
   @IsOptional()

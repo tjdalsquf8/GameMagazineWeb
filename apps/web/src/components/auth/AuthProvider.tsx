@@ -1,17 +1,14 @@
-// 앱 초기화 시 silent refresh 처리 — accessToken 쿠키 만료 시 refreshToken으로 재발급
+// 앱 초기화 시 silent refresh 처리 — accessToken이 없을 때 refreshToken으로 재발급
+// accessToken은 HttpOnly 쿠키로 서버가 관리하므로 JS에서 직접 쿠키를 설정하지 않음
 'use client'
 
 import { useEffect } from 'react'
 import { useAuthStore } from '@/store/authStore'
+import { env } from '@/lib/env'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+const BASE_URL = env.apiUrl
 
-/** accessToken 쿠키 존재 여부 확인 */
-function hasAccessTokenCookie(): boolean {
-  return document.cookie.split(';').some((c) => c.trim().startsWith('accessToken='))
-}
-
-/** refreshToken으로 새 accessToken 발급 후 쿠키 세팅 */
+/** refreshToken으로 새 accessToken 발급 요청 — 서버가 HttpOnly 쿠키로 자동 설정 */
 async function silentRefresh(): Promise<string | null> {
   try {
     const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
@@ -33,19 +30,19 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!isAuthenticated || !user) return
 
-    // accessToken 쿠키가 살아있으면 아무것도 하지 않음
-    if (hasAccessTokenCookie()) return
+    // accessToken이 메모리(스토어)에 있으면 아무것도 하지 않음
+    // (accessToken은 localStorage에 저장되지 않으므로 새로고침 시 항상 null → silentRefresh 실행)
+    if (accessToken) return
 
-    // 쿠키 만료 → refreshToken으로 재발급 시도
+    // 메모리에 토큰 없음 → refreshToken 쿠키로 재발급 시도
+    // 서버가 새 accessToken을 HttpOnly 쿠키로 설정하고, 응답 body에도 반환
     silentRefresh().then((newToken) => {
       if (newToken) {
-        // 새 토큰을 스토어 + 쿠키에 반영
+        // 새 토큰을 스토어(메모리)에만 반영 — 쿠키는 서버가 HttpOnly로 자동 설정
         setAuth(user, newToken)
-        document.cookie = `accessToken=${newToken}; path=/; max-age=86400`
       } else {
         // refreshToken도 만료 → 완전 로그아웃
         clearAuth()
-        document.cookie = 'accessToken=; path=/; max-age=0'
       }
     })
   }, [isAuthenticated, user, accessToken, setAuth, clearAuth])

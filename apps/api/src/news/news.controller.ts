@@ -11,12 +11,17 @@ import {
   HttpStatus,
   UseGuards,
   Request,
+  ParseIntPipe,
+  DefaultValuePipe,
+  BadRequestException,
 } from '@nestjs/common'
+import { Throttle } from '@nestjs/throttler'
 import { NewsService } from './news.service'
 import { NewsListQueryDto } from './dto/news-list-query.dto'
 import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto } from './dto/news-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { AdminGuard } from '../admin/guards/admin.guard'
+import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe'
 
 @Controller('news')
 export class NewsController {
@@ -55,19 +60,25 @@ export class NewsController {
 
   // GET /news/popular — 카테고리별 조회수 상위 뉴스 (사이드바용)
   // :id 라우트보다 반드시 앞에 선언해야 NestJS 라우팅 충돌 방지
+  // limit: DefaultValuePipe(5)로 기본값 5 설정, ParseIntPipe로 정수 변환, 1~50 범위 강제
   @Get('popular')
   async getPopularNews(
     @Query('mainCategory') mainCategory: string,
-    @Query('limit') limit = 5,
+    @Query('limit', new DefaultValuePipe(5), ParseIntPipe) limit: number,
   ): Promise<{ success: true; data: PopularNewsItemDto[] }> {
-    const data = await this.newsService.getPopularNews(mainCategory, Number(limit))
+    if (limit < 1) {
+      throw new BadRequestException({ code: 'VAL_001', message: 'limit은 1 이상이어야 합니다' })
+    }
+    // DB 과부하 방지 — limit 상한 50 강제
+    const safeLimit = Math.min(limit, 50)
+    const data = await this.newsService.getPopularNews(mainCategory, safeLimit)
     return { success: true, data }
   }
 
   // GET /news/:id/recommend — 좋아요 수 및 내 좋아요 여부 조회 (비로그인 시 liked: false)
   @Get(':id/recommend')
   async getRecommend(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @Request() req: { user?: { id: string } },
   ): Promise<{ success: true; data: { liked: boolean; count: number } }> {
     const userId = req.user?.id ?? null
@@ -79,28 +90,29 @@ export class NewsController {
   @Post(':id/recommend')
   @UseGuards(JwtAuthGuard)
   async toggleRecommend(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
     @Request() req: { user: { id: string } },
   ): Promise<{ success: true; data: { liked: boolean; count: number } }> {
     const data = await this.newsService.toggleRecommend(id, req.user.id)
     return { success: true, data }
   }
 
-  // POST /news/:id/view — 조회수 증가 (인증 불필요, 클라이언트 localStorage 하루 1회 제한)
+  // POST /news/:id/view — 조회수 증가 (인증 불필요)
+  // IP당 하루 1회 rate limit 적용 — ttl: 86400000ms(24시간), limit: 1
   @Post(':id/view')
+  @Throttle({ default: { limit: 1, ttl: 86400000 } })
   @HttpCode(HttpStatus.OK)
   async incrementView(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
   ): Promise<{ success: true }> {
     await this.newsService.incrementView(id)
     return { success: true }
   }
 
-  // GET /news/:id
-  // 뉴스 상세 조회
+  // GET /news/:id — 뉴스 상세 조회 (cuid 형식 검증 적용)
   @Get(':id')
   async getNewsDetail(
-    @Param('id') id: string,
+    @Param('id', ParseCuidPipe) id: string,
   ): Promise<{ success: true; data: NewsDetailDto }> {
     const news = await this.newsService.getNewsDetail(id)
     return { success: true, data: news }

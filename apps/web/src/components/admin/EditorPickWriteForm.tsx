@@ -255,6 +255,7 @@ export default function EditorPickWriteForm({ onSuccess }: EditorPickWriteFormPr
         onUpload={handleThumbnailUploaded}
         currentCount={thumbnailUrl ? 1 : 0}
         maxCount={1}
+        folder="editornews"
       />
 
       {/* 본문 이미지 업로드 모달 — maxCount: 5, 썸네일과 별도 인스턴스 */}
@@ -264,6 +265,7 @@ export default function EditorPickWriteForm({ onSuccess }: EditorPickWriteFormPr
         onUpload={handleContentImagesUploaded}
         currentCount={contentImageCount}
         maxCount={MAX_CONTENT_IMAGE_COUNT}
+        folder="editornews"
       />
     </div>
   )

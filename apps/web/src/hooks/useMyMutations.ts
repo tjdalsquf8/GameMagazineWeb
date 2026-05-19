@@ -100,11 +100,11 @@ export function useDeleteAccount(onSuccess?: () => void) {
   const [isLoading, setIsLoading] = useState(false)
   const showToast = useToastStore((s) => s.showToast)
 
-  /** 회원 탈퇴 요청 실행 */
-  const mutate = async () => {
+  /** 회원 탈퇴 요청 실행 — 비밀번호 재확인 포함 */
+  const mutate = async (password: string) => {
     setIsLoading(true)
     try {
-      const res = await deleteAccount()
+      const res = await deleteAccount(password)
       if (res.success) {
         showToast('탈퇴가 완료되었습니다.', 'success')
         onSuccess?.()

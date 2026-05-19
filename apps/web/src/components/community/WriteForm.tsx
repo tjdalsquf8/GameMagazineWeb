@@ -17,6 +17,8 @@ import ImageUploadModal from '@/components/ui/ImageUploadModal'
 
 // 최대 이미지 업로드 수
 const MAX_IMAGE_COUNT = 5
+// 본문 최대 길이 (HTML 포함, 백엔드 @MaxLength와 동일)
+const MAX_CONTENT_LENGTH = 50000
 
 export default function WriteForm() {
   const router = useRouter()
@@ -64,7 +66,10 @@ export default function WriteForm() {
     setUploadedImageCount(imgCount)
   }, [content])
 
-  const isSubmitEnabled = categoryId !== '' && title.trim() !== '' && !isSubmitting
+  const isContentOverLimit = content.length > MAX_CONTENT_LENGTH
+  // 카운터 표시용 — HTML 태그 제거한 실제 텍스트 길이 (브라우저가 남기는 <br> 등 제외)
+  const visibleContentLength = content.replace(/<[^>]*>/g, '').trim().length
+  const isSubmitEnabled = categoryId !== '' && title.trim() !== '' && !isSubmitting && !isContentOverLimit
 
   /** 게시글 등록 처리 — content를 sanitize 후 전송 */
   const handleSubmit = async () => {
@@ -163,7 +168,12 @@ export default function WriteForm() {
             onImageButtonClick={() => setIsImageModalOpen(true)}
             placeholder="내용을 입력해주세요"
           />
-          <div className="flex justify-end mt-1">
+          <div className="flex justify-between mt-1">
+            <span className={`text-xs ${isContentOverLimit ? 'text-red-400' : 'text-text-muted'}`}>
+              {isContentOverLimit
+                ? `본문이 너무 깁니다 (${visibleContentLength.toLocaleString()} / ${MAX_CONTENT_LENGTH.toLocaleString()})`
+                : `${visibleContentLength.toLocaleString()} / ${MAX_CONTENT_LENGTH.toLocaleString()}`}
+            </span>
             <span className="text-xs text-text-muted">
               이미지 {uploadedImageCount} / {MAX_IMAGE_COUNT}
             </span>

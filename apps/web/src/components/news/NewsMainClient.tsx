@@ -2,6 +2,7 @@
 // HeroSection, NewsGrid, Pagination, 광고 배너를 조합하는 최상위 래퍼
 'use client'
 import { useState, useCallback } from 'react'
+import { env } from '@/lib/env'
 import type { CategorySlug } from '@/lib/mock/news'
 import type { MainCategoryValue } from '@/constants/categories'
 import type { NewsArticle, NewsListResponse } from '@/types/news'
@@ -55,7 +56,7 @@ export function NewsMainClient({ initialNews }: NewsMainClientProps) {
         if (subCategory !== null) params.set('subCategory', subCategory)
 
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'}/api/news?${params.toString()}`
+          `${env.apiUrl}/api/news?${params.toString()}`
         )
         if (!res.ok) {
           setNews([])
@@ -152,10 +153,6 @@ export function NewsMainClient({ initialNews }: NewsMainClientProps) {
         />
       </div>
 
-      {/* 하단 가로 광고 배너 */}
-      <div className="flex items-center justify-center w-full rounded-lg border-2 border-dashed border-[var(--color-border)] bg-[var(--color-surface)] h-24 md:h-28">
-        <p className="text-sm text-[var(--color-text-muted)]">광고 영역 (728×90)</p>
-      </div>
     </div>
   )
 }

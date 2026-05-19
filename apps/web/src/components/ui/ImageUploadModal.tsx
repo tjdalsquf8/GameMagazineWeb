@@ -5,7 +5,7 @@
 
 import { useState, useRef, useCallback, DragEvent, ChangeEvent } from 'react'
 import { X, ImagePlus, Upload } from 'lucide-react'
-import { useImageUpload } from '@/hooks/useImageUpload'
+import { useImageUpload, type UploadFolder } from '@/hooks/useImageUpload'
 import { useToastStore } from '@/store/toastStore'
 
 // 업로드된 개별 이미지 상태 타입
@@ -23,6 +23,7 @@ interface ImageUploadModalProps {
   onUpload: (urls: string[]) => void
   currentCount: number
   maxCount?: number
+  folder?: UploadFolder
 }
 
 // 이미지 업로드 모달 — 드래그&드롭 및 클릭으로 파일 선택 후 R2에 업로드
@@ -32,6 +33,7 @@ export default function ImageUploadModal({
   onUpload,
   currentCount,
   maxCount = 5,
+  folder,
 }: ImageUploadModalProps) {
   const { upload, validate } = useImageUpload()
   const { showToast } = useToastStore()
@@ -80,7 +82,7 @@ export default function ImageUploadModal({
         try {
           const publicUrl = await upload(file, (p) => {
             setImages((prev) => prev.map((img) => (img.id === id ? { ...img, progress: p } : img)))
-          })
+          }, folder)
 
           // 업로드 완료 상태 갱신
           setImages((prev) =>

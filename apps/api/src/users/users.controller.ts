@@ -18,6 +18,7 @@ import { UpdateNicknameDto } from './dto/update-nickname.dto'
 import { UpdatePasswordDto } from './dto/update-password.dto'
 import { UpdateProfileImageDto } from './dto/update-profile-image.dto'
 import { PaginationQueryDto } from './dto/pagination-query.dto'
+import { DeleteAccountDto } from './dto/delete-account.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { Role } from '@prisma/client'
 import { Request } from 'express'
@@ -123,11 +124,14 @@ export class UsersController {
     return { success: true, data }
   }
 
-  /** DELETE /users/me — 회원 탈퇴 */
+  /** DELETE /users/me — 회원 탈퇴 (비밀번호 재확인 필요) */
   @Delete()
   @HttpCode(HttpStatus.OK)
-  async deleteAccount(@Req() req: AuthenticatedRequest) {
-    const data = await this.usersService.deleteAccount(req.user.id)
+  async deleteAccount(
+    @Body() dto: DeleteAccountDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const data = await this.usersService.deleteAccount(req.user.id, dto)
     return { success: true, data }
   }
 }

@@ -12,6 +12,7 @@ import { NewsViewCounter } from './_components/NewsViewCounter'
 import { SummaryBox } from './_components/SummaryBox'
 import { AdBanner } from './_components/AdBanner'
 import { Sidebar } from './_components/Sidebar'
+import { env } from '@/lib/env'
 
 // 동적 파라미터 허용 — 빌드 시 알 수 없는 id에도 접근 가능
 export const dynamicParams = true
@@ -31,9 +32,7 @@ interface ApiResponse<T> {
 
 // 뉴스 상세 데이터 fetch 함수 — 404 시 null 반환
 async function fetchArticle(id: string): Promise<NewsDetail | null> {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
-
-  const res = await fetch(`${baseUrl}/api/news/${id}`, {
+  const res = await fetch(`${env.apiUrl}/api/news/${id}`, {
     next: { revalidate: 3600 },
   })
 

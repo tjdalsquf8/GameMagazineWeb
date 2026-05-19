@@ -9,11 +9,12 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { getPost, deletePost, incrementPostView, togglePostRecommend } from '@/lib/api/posts'
+import { getPost, deletePost, incrementPostView, togglePostRecommend, reportPost } from '@/lib/api/posts'
 import { useAuth } from '@/hooks/useAuth'
 import { useToastStore } from '@/store/toastStore'
 import { COMMUNITY_CATEGORIES } from '@/constants/gamecategory'
 import RecommendButton from '@/components/community/RecommendButton'
+import ReportModal from '@/components/community/ReportModal'
 import { sanitizeHTML } from '@/lib/utils/sanitize'
 import type { Post } from '@/types/community'
 
@@ -36,6 +37,7 @@ export default function PostDetail({ postId }: PostDetailProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
 
   // 추천 상태 — Optimistic Update를 위한 독립 state
   const [recommended, setRecommended] = useState(false)
@@ -117,6 +119,42 @@ export default function PostDetail({ postId }: PostDetailProps) {
       showToast(err instanceof Error ? err.message : '삭제에 실패했습니다', 'error')
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  /** 게시글 신고 — 비로그인 시 로그인 페이지로 이동, 중복 신고 개별 메시지 처리 */
+  const handleReport = async (reason: string) => {
+    if (!accessToken) {
+      router.push('/login')
+      return
+    }
+    try {
+      await reportPost(postId, reason, accessToken)
+      showToast('신고가 접수되었습니다', 'success')
+    } catch (err) {
+      const code = (err as { code?: string }).code
+      if (code === 'CONFLICT' || (err instanceof Error && err.message.includes('이미'))) {
+        showToast('이미 신고한 게시글입니다', 'error')
+      } else {
+        showToast('신고 접수에 실패했습니다. 다시 시도해주세요', 'error')
+      }
+      // 에러를 다시 throw해 모달이 닫히지 않도록 함
+      throw err
+    }
+  }
+
+  /** 현재 URL을 클립보드에 복사 — Web Share API 미지원 환경은 clipboard fallback */
+  const handleShare = async () => {
+    const url = window.location.href
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: post?.title, url })
+      } else {
+        await navigator.clipboard.writeText(url)
+        showToast('링크가 복사되었습니다', 'success')
+      }
+    } catch {
+      showToast('링크 복사에 실패했습니다', 'error')
     }
   }
 
@@ -228,8 +266,8 @@ export default function PostDetail({ postId }: PostDetailProps) {
         dangerouslySetInnerHTML={{ __html: sanitizeHTML(post.content) }}
       />
 
-      {/* 추천 버튼 — 본문 하단 중앙 배치 */}
-      <div className="flex justify-center mb-6">
+      {/* 추천 버튼 — 본문 하단 중앙 배치 / 공유·신고 버튼 — 우측 하단 배치 (신고는 본인 게시글 제외) */}
+      <div className="relative flex justify-center mb-6">
         <RecommendButton
           recommended={recommended}
           recommendCount={recommendCount}
@@ -237,7 +275,41 @@ export default function PostDetail({ postId }: PostDetailProps) {
           isLoading={isRecommending}
           size="lg"
         />
+        <div className="absolute right-0 bottom-0 flex items-center gap-2 text-xs text-text-muted">
+          <button
+            type="button"
+            onClick={handleShare}
+            className="hover:text-text-secondary transition-colors"
+          >
+            공유
+          </button>
+          {!isOwnPost && (
+            <>
+              <span className="text-border">|</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!accessToken) {
+                    router.push('/login')
+                    return
+                  }
+                  setIsReportModalOpen(true)
+                }}
+                className="hover:text-red-500 transition-colors"
+              >
+                신고
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        onSubmit={handleReport}
+        title="게시글 신고하기"
+      />
 
       <hr className="border-border mb-4" />
 

@@ -2,8 +2,9 @@
 import type { ApiResponse } from '@/types'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
+import { env } from '@/lib/env'
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+const BASE_URL = env.apiUrl
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
@@ -78,9 +79,8 @@ async function request<T>(
       throw new Error('UNAUTHORIZED')
     }
 
-    // 새 accessToken을 스토어 + 쿠키에 저장 (미들웨어 인증 체크 동기화)
+    // 새 accessToken을 스토어에 저장 (쿠키는 서버가 HttpOnly로 자동 설정)
     useAuthStore.setState({ accessToken: newToken })
-    document.cookie = `accessToken=${newToken}; path=/; max-age=86400`
 
     // 원래 요청 재시도
     const retryRes = await fetch(`${BASE_URL}${path}`, {
@@ -92,6 +92,16 @@ async function request<T>(
 
     const retryJson = await retryRes.json()
     return retryJson as ApiResponse<T>
+  }
+
+  // 403 인터셉터 — 정지 계정: 메시지 표시 후 로그아웃
+  if (res.status === 403) {
+    const json = await res.json() as ApiResponse<T>
+    const message = (!json.success && json.error?.message) ? json.error.message : '계정이 정지되었습니다'
+    useToastStore.getState().showToast(message, 'error')
+    useAuthStore.getState().clearAuth()
+    window.location.href = '/login'
+    throw new Error('FORBIDDEN')
   }
 
   const json = await res.json()
@@ -110,6 +120,6 @@ export const apiClient = {
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>('PATCH', path, body, options),
 
-  delete: <T>(path: string, options?: RequestOptions) =>
-    request<T>('DELETE', path, undefined, options),
+  delete: <T>(path: string, body?: unknown, options?: RequestOptions) =>
+    request<T>('DELETE', path, body, options),
 }
