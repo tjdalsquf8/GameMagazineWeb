@@ -445,7 +445,7 @@ export default function AdminArticlesPage() {
                   className={[
                     'min-w-[32px] h-8 px-2 rounded-md text-xs font-medium transition-colors border',
                     filter.page === page
-                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                      ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] border-[var(--color-primary)]'
                       : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
                   ].join(' ')}
                 >

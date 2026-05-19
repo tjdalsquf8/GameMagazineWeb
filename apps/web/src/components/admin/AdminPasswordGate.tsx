@@ -142,7 +142,7 @@ export function AdminPasswordGate({ onVerified }: AdminPasswordGateProps) {
               disabled={isSubmitting}
               className={[
                 'w-full py-2.5 rounded-lg text-sm font-medium transition-colors',
-                'bg-[var(--color-primary)] text-white',
+                'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
                 'hover:bg-[var(--color-primary-hover)]',
                 'disabled:opacity-60 disabled:cursor-not-allowed',
                 'flex items-center justify-center gap-2',

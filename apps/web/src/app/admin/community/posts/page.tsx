@@ -140,7 +140,7 @@ export default function AdminCommunityPostsPage() {
           className={[
             'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
             parentCategoryId === 'ALL'
-              ? 'bg-[var(--color-primary)] text-white'
+              ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
               : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]',
           ].join(' ')}
         >
@@ -154,7 +154,7 @@ export default function AdminCommunityPostsPage() {
             className={[
               'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
               parentCategoryId === cat.id
-                ? 'bg-[var(--color-primary)] text-white'
+                ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
                 : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]',
             ].join(' ')}
           >
@@ -196,8 +196,8 @@ export default function AdminCommunityPostsPage() {
               className={[
                 'px-3 py-1.5 transition-colors',
                 deletedFilter === opt.key
-                  ? 'bg-[var(--color-primary)] text-white'
-                  : 'bg-white dark:bg-gray-900 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
+                  ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                  : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]',
               ].join(' ')}
             >
               {opt.label}
@@ -223,7 +223,7 @@ export default function AdminCommunityPostsPage() {
           <button
             type="button"
             onClick={handleSearch}
-            className="px-3 py-1.5 text-sm bg-[var(--color-primary)] text-white rounded-md hover:opacity-90 transition-opacity"
+            className="px-3 py-1.5 text-sm bg-[var(--color-primary)] text-[var(--color-primary-foreground)] rounded-md hover:opacity-90 transition-opacity"
           >
             검색
           </button>
@@ -374,7 +374,7 @@ export default function AdminCommunityPostsPage() {
                   className={[
                     'min-w-[32px] h-8 px-2 rounded-md text-xs font-medium transition-colors border',
                     page === p
-                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                      ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] border-[var(--color-primary)]'
                       : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
                   ].join(' ')}
                 >

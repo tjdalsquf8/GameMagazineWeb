@@ -3,10 +3,38 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { XCircle, ChevronLeft, ChevronRight, EyeOff, X } from 'lucide-react'
+import { XCircle, ChevronLeft, ChevronRight, EyeOff, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { useToastStore } from '@/store/toastStore'
 import { fetchAdminReports, resolveReport, banUser } from '@/lib/api/admin.api'
 import type { AdminReport, ReportStatus, BanDuration } from '@/types/admin.types'
+
+/** 접기/펼치기 텍스트 블록 — 3줄 초과 시 더보기 버튼 표시 */
+function ExpandableText({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div className="bg-[var(--color-surface)] rounded p-3">
+      <p
+        className={[
+          'text-[var(--color-text-primary)] whitespace-pre-wrap break-all text-sm',
+          expanded ? 'max-h-60 overflow-y-auto' : 'line-clamp-3',
+        ].join(' ')}
+      >
+        {text}
+      </p>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="mt-1.5 flex items-center gap-0.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+      >
+        {expanded ? (
+          <><ChevronUp size={12} />접기</>
+        ) : (
+          <><ChevronDown size={12} />더보기</>
+        )}
+      </button>
+    </div>
+  )
+}
 
 /** 신고 상세 모달 — 내용 전문 및 신고 사유 전문 표시 */
 function ReportDetailModal({
@@ -45,15 +73,11 @@ function ReportDetailModal({
           </div>
           <div>
             <p className="text-xs font-medium text-[var(--color-text-muted)] mb-1">내용</p>
-            <p className="text-[var(--color-text-primary)] whitespace-pre-wrap break-all bg-[var(--color-surface)] rounded p-3 max-h-40 overflow-y-auto">
-              {report.targetPreview}
-            </p>
+            <ExpandableText text={report.targetPreview} />
           </div>
           <div>
             <p className="text-xs font-medium text-[var(--color-text-muted)] mb-1">신고 사유</p>
-            <p className="text-[var(--color-text-primary)] whitespace-pre-wrap break-all bg-[var(--color-surface)] rounded p-3 max-h-40 overflow-y-auto">
-              {report.reason}
-            </p>
+            <ExpandableText text={report.reason} />
           </div>
           {report.targetAuthorNickname && (
             <div>
@@ -285,8 +309,8 @@ export default function AdminCommunityReportsPage() {
             className={[
               'px-3 py-1.5 transition-colors',
               statusFilter === opt.key
-                ? 'bg-[var(--color-primary)] text-white'
-                : 'bg-white dark:bg-gray-900 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
+                ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                : 'bg-[var(--color-surface)] text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]',
             ].join(' ')}
           >
             {opt.label}
@@ -516,7 +540,7 @@ export default function AdminCommunityReportsPage() {
                   className={[
                     'min-w-[32px] h-8 px-2 rounded-md text-xs font-medium transition-colors border',
                     page === p
-                      ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)]'
+                      ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] border-[var(--color-primary)]'
                       : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
                   ].join(' ')}
                 >
