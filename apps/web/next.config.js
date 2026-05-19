@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    // jsdom은 __dirname 기반 CSS 파일 로드가 있어 번들링하면 경로 오류 발생
+    serverComponentsExternalPackages: ['jsdom', 'isomorphic-dompurify'],
+  },
   images: {
     remotePatterns: [
       {

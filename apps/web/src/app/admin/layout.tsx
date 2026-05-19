@@ -1,6 +1,6 @@
 // 어드민 공통 레이아웃 — 사이드바 + 메인 콘텐츠 2단 구조
 // 루트 layout.tsx의 Header/Footer를 덮어쓰기 위해 별도 html/body 없이 구성
-// CSR 전용 — 인증(ADMIN role) 확인 후 진입 허용
+// CSR 전용 — ADMIN role 확인 + 비밀번호 재인증 게이트 통과 후 진입 허용
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -8,6 +8,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { AdminPasswordGate, isAdminSessionValid } from '@/components/admin/AdminPasswordGate'
 import {
   LayoutDashboard,
   Workflow,
@@ -52,6 +53,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  // 비밀번호 게이트 통과 여부 — sessionStorage 만료 시각 기준으로 초기값 설정
+  const [verified, setVerified] = useState(false)
+
+  /** sessionStorage 유효성 초기 확인 (클라이언트 마운트 시점에만 실행) */
+  useEffect(() => {
+    if (isAdminSessionValid()) {
+      setVerified(true)
+    }
+  }, [])
 
   /** ADMIN role 미보유 시 홈으로 리다이렉트 */
   useEffect(() => {
@@ -62,8 +72,13 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   }, [isAuthLoading, isAuthenticated, user, router])
 
-  // hydration 완료 전 또는 ADMIN이 아닌 경우 빈 화면
+  // 인증 로딩 중 또는 ADMIN이 아닌 경우 빈 화면
   if (isAuthLoading || !isAuthenticated || user?.role !== 'ADMIN') return null
+
+  // ADMIN이지만 비밀번호 게이트 미통과 시 게이트 모달 표시
+  if (!verified) {
+    return <AdminPasswordGate onVerified={() => setVerified(true)} />
+  }
 
   return (
     // 루트 layout의 Header/Footer 위에 full-screen 레이어로 렌더링

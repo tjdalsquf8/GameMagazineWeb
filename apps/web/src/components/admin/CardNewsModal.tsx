@@ -205,14 +205,19 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
 
                 {/* URL 입력 */}
                 {inputMode === 'url' && (
-                  <input
-                    id="card-image-url"
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                    className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-white dark:bg-gray-800 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                  />
+                  <div className="space-y-1.5">
+                    <input
+                      id="card-image-url"
+                      type="url"
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-white dark:bg-gray-800 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
+                    />
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      권장 해상도: <span className="font-medium text-[var(--color-text-secondary)]">1080 × 1350px (4:5 세로)</span> — 카드 전체를 꽉 채워 선명하게 출력됩니다.
+                    </p>
+                  </div>
                 )}
 
                 {/* 파일 업로드 */}
@@ -271,6 +276,13 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                           <RefreshCw size={12} />
                         </button>
                       </div>
+                    )}
+
+                    {/* 해상도 힌트 */}
+                    {!previewUrl && !isUploading && (
+                      <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
+                        권장 해상도: <span className="font-medium text-[var(--color-text-secondary)]">1080 × 1350px (4:5 세로)</span> — 카드 전체를 꽉 채워 선명하게 출력됩니다.
+                      </p>
                     )}
 
                     {/* 에러 메시지 */}

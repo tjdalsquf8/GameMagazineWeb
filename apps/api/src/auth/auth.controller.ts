@@ -6,9 +6,11 @@ import {
   Req,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { Response, Request } from 'express'
+import { Role } from '@prisma/client'
 import { AuthService } from './auth.service'
 import { SendCodeDto } from './dto/send-code.dto'
 import { VerifyCodeDto } from './dto/verify-code.dto'
@@ -17,7 +19,16 @@ import { LoginDto } from './dto/login.dto'
 import { ForgotPasswordDto } from './dto/forgot-password.dto'
 import { VerifyResetTokenDto } from './dto/verify-reset-token.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
+import { VerifyPasswordDto } from './dto/verify-password.dto'
+import { JwtAuthGuard } from './guards/jwt-auth.guard'
 import { ConfigService } from '@nestjs/config'
+
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: string
+    role: Role
+  }
+}
 
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 // setGlobalPrefix('api')로 /api prefix가 자동 적용되므로 'auth'만 선언
@@ -162,5 +173,30 @@ export class AuthController {
   async resetPassword(@Body() dto: ResetPasswordDto) {
     const result = await this.authService.resetPassword(dto)
     return { success: true, data: { message: result.message } }
+  }
+
+  // ============================
+  // 어드민 비밀번호 재확인
+  // ============================
+
+  /** POST /auth/verify-password — 어드민 페이지 접근 전 비밀번호 재확인 (로그인 유저 전용) */
+  @Post('verify-password')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @HttpCode(HttpStatus.OK)
+  async verifyPassword(
+    @Body() dto: VerifyPasswordDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const result = await this.authService.verifyPassword(req.user.id, dto)
+
+    if (!result.verified) {
+      return {
+        success: false,
+        error: { code: 'AUTH_001', message: '비밀번호가 올바르지 않습니다' },
+      }
+    }
+
+    return { success: true, data: { verified: true } }
   }
 }

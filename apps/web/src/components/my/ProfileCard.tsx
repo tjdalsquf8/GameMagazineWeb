@@ -4,7 +4,7 @@
 import { useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { LogOut, Camera, Loader2 } from 'lucide-react'
+import { LogOut, Camera, Loader2, Shield } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useAuthStore } from '@/store/authStore'
 import { getPresignedUrl, updateProfileImage } from '@/lib/api/my.api'
@@ -61,6 +61,7 @@ export default function ProfileCard({
   const { logout } = useAuth()
   const updateProfileImageStore = useAuthStore((s) => s.updateProfileImage)
   const storeProfileImage = useAuthStore((s) => s.user?.profileImage ?? null)
+  const userRole = useAuthStore((s) => s.user?.role ?? null)
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -260,6 +261,20 @@ export default function ProfileCard({
 
         {/* 구분선 */}
         <div className="my-3 border-t border-[var(--color-border)]" />
+
+        {/* 관리자 페이지 링크 — ADMIN 역할인 경우에만 표시 */}
+        {userRole === 'ADMIN' && (
+          <>
+            <Link
+              href="/admin"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-border)]/40 transition-colors duration-150"
+            >
+              <Shield size={14} />
+              관리자 페이지
+            </Link>
+            <div className="my-3 border-t border-[var(--color-border)]" />
+          </>
+        )}
 
         {/* 로그아웃 */}
         <button

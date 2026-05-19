@@ -3,7 +3,7 @@
 
 import { forwardRef } from 'react'
 
-import { sanitizeHTML } from '@/lib/utils/sanitize'
+import { sanitizeCardNewsHTML } from '@/lib/utils/sanitize'
 
 interface CardNewsSlideProps {
   html: string
@@ -17,7 +17,7 @@ const CardNewsSlide = forwardRef<HTMLDivElement, CardNewsSlideProps>(({ html }, 
     <div
       ref={ref}
       style={{ width: 1080, height: 1350, overflow: 'hidden', position: 'relative' }}
-      dangerouslySetInnerHTML={{ __html: sanitizeHTML(html) }}
+      dangerouslySetInnerHTML={{ __html: sanitizeCardNewsHTML(html) }}
     />
   )
 })

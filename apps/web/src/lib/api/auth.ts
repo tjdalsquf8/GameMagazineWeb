@@ -46,6 +46,11 @@ export async function resetPassword(resetToken: string, newPassword: string) {
   })
 }
 
+/** 현재 로그인된 사용자의 비밀번호를 검증 (어드민 진입 시 재확인용) */
+export async function verifyPassword(password: string) {
+  return apiClient.post<{ verified: boolean }>('/api/auth/verify-password', { password })
+}
+
 export function setAccessTokenCookie(token: string): void {
   document.cookie = `accessToken=${token}; path=/; max-age=86400` // 1일
 }

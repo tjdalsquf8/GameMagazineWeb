@@ -20,6 +20,7 @@ import { LoginDto } from "./dto/login.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { VerifyResetTokenDto } from "./dto/verify-reset-token.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
+import { VerifyPasswordDto } from "./dto/verify-password.dto";
 import * as bcrypt from "bcrypt";
 import { randomInt, createHash } from "crypto";
 
@@ -482,6 +483,45 @@ export class AuthService {
 
     this.logger.log(`비밀번호 재설정 코드 검증 완료: ${email}`);
     return { resetToken };
+  }
+
+  /** 어드민 페이지 접근 전 비밀번호 재확인 — 성공/실패 모두 200으로 반환 */
+  async verifyPassword(
+    userId: string,
+    dto: VerifyPasswordDto,
+  ): Promise<{ verified: boolean }> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, password: true },
+      })
+
+      // 유저가 없거나 소셜 로그인 계정(password 없음)인 경우 검증 실패 처리
+      if (!user || !user.password) {
+        this.logger.warn(`verifyPassword: 유저 없음 또는 password 미설정 userId=${userId}`)
+        return { verified: false }
+      }
+
+      const isMatch = await bcrypt.compare(dto.password, user.password)
+
+      if (!isMatch) {
+        this.logger.warn(`verifyPassword: 비밀번호 불일치 userId=${userId}`)
+      } else {
+        this.logger.log(`verifyPassword: 비밀번호 확인 성공 userId=${userId}`)
+      }
+
+      return { verified: isMatch }
+    } catch (e) {
+      if (e instanceof HttpException) throw e
+      this.logger.error(`verifyPassword(${userId}) failed`, e instanceof Error ? e.stack : e)
+      throw new HttpException(
+        {
+          success: false,
+          error: { code: 'INTERNAL_001', message: '서버 오류가 발생했습니다' },
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      )
+    }
   }
 
   async resetPassword(dto: ResetPasswordDto): Promise<{ message: string }> {
