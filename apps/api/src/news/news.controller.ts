@@ -15,13 +15,14 @@ import {
   DefaultValuePipe,
   BadRequestException,
 } from '@nestjs/common'
-import { Throttle } from '@nestjs/throttler'
+import { Throttle, SkipThrottle } from '@nestjs/throttler'
 import { NewsService } from './news.service'
 import { NewsListQueryDto } from './dto/news-list-query.dto'
 import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto } from './dto/news-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { AdminGuard } from '../admin/guards/admin.guard'
 import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe'
+import { NewsViewThrottleGuard } from '../common/guards/news-view-throttle.guard'
 
 @Controller('news')
 export class NewsController {
@@ -98,8 +99,11 @@ export class NewsController {
   }
 
   // POST /news/:id/view — 조회수 증가 (인증 불필요)
-  // IP당 하루 1회 rate limit 적용 — ttl: 86400000ms(24시간), limit: 1
+  // IP + newsId 조합 키로 뉴스별 독립 24시간 1회 제한
+  // @SkipThrottle: APP_GUARD 전역 ThrottlerGuard를 건너뛰고 NewsViewThrottleGuard만 적용
   @Post(':id/view')
+  @SkipThrottle()
+  @UseGuards(NewsViewThrottleGuard)
   @Throttle({ default: { limit: 1, ttl: 86400000 } })
   @HttpCode(HttpStatus.OK)
   async incrementView(
