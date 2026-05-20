@@ -23,7 +23,8 @@ import { PostQueryDto } from './dto/post-query.dto'
 import { ReportDto } from './dto/report-post.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard'
-import { Throttle } from '@nestjs/throttler'
+import { Throttle, SkipThrottle } from '@nestjs/throttler'
+import { PostViewThrottleGuard } from '../common/guards/post-view-throttle.guard'
 import { Role } from '@prisma/client'
 import { Request } from 'express'
 
@@ -62,8 +63,11 @@ export class PostsController {
     return { success: true, data }
   }
 
-  /** POST /posts/:postId/view — 조회수 증가 전용 엔드포인트 (인증 불필요, IP당 24시간 1회 제한) */
+  /** POST /posts/:postId/view — 조회수 증가 전용 엔드포인트 (인증 불필요, IP+postId당 24시간 1회 제한) */
+  // @SkipThrottle: APP_GUARD 전역 ThrottlerGuard를 건너뛰고 PostViewThrottleGuard만 적용
   @Post(':postId/view')
+  @SkipThrottle()
+  @UseGuards(PostViewThrottleGuard)
   @Throttle({ default: { limit: 1, ttl: 86400000 } })
   @HttpCode(HttpStatus.OK)
   async incrementView(@Param('postId', ParseIntPipe) postId: number) {
