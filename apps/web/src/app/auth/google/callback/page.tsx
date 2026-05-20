@@ -23,7 +23,10 @@ export default function GoogleCallbackPage() {
           router.replace('/login?error=oauth')
           return
         }
-        const json = (await res.json()) as { success: boolean; data: User & { accessToken?: string } }
+        const json = (await res.json()) as {
+          success: boolean
+          data: User & { accessToken?: string }
+        }
         if (!json.success) {
           router.replace('/login?error=oauth')
           return
@@ -34,7 +37,10 @@ export default function GoogleCallbackPage() {
           method: 'POST',
           credentials: 'include',
         })
-        const refreshJson = (await refreshRes.json()) as { success: boolean; data: { accessToken: string } }
+        const refreshJson = (await refreshRes.json()) as {
+          success: boolean
+          data: { accessToken: string }
+        }
         if (!refreshJson.success) {
           router.replace('/login?error=oauth')
           return
@@ -51,8 +57,8 @@ export default function GoogleCallbackPage() {
   }, [router, setAuth])
 
   return (
-    <div className='flex min-h-screen items-center justify-center'>
-      <p className='text-gray-400'>로그인 처리 중...</p>
+    <div className="flex min-h-screen items-center justify-center">
+      <p className="text-gray-400">로그인 처리 중...</p>
     </div>
   )
 }
