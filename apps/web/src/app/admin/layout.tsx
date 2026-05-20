@@ -58,11 +58,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   /** sessionStorage 유효성 초기 확인 (클라이언트 마운트 시점에만 실행) */
   useEffect(() => {
-    // Google OAuth 유저는 구글이 이미 인증했으므로 비밀번호 게이트 건너뜀
-    if (user?.provider === 'google' || isAdminSessionValid()) {
+    if (isAdminSessionValid()) {
       setVerified(true)
     }
-  }, [user])
+  }, [])
 
   /** ADMIN role 미보유 시 홈으로 리다이렉트 */
   useEffect(() => {
@@ -76,8 +75,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   // 인증 로딩 중 또는 ADMIN이 아닌 경우 빈 화면
   if (isAuthLoading || !isAuthenticated || user?.role !== 'ADMIN') return null
 
-  // ADMIN이지만 비밀번호 게이트 미통과 시 게이트 모달 표시
-  if (!verified) {
+  // Google OAuth 유저는 비밀번호 없으므로 게이트 건너뜀
+  // 이메일 유저는 sessionStorage 인증 또는 비밀번호 게이트 통과 필요
+  if (!verified && user?.provider !== 'google') {
     return <AdminPasswordGate onVerified={() => setVerified(true)} />
   }
 
