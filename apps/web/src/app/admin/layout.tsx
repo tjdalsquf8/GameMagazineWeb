@@ -58,10 +58,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   /** sessionStorage 유효성 초기 확인 (클라이언트 마운트 시점에만 실행) */
   useEffect(() => {
-    if (isAdminSessionValid()) {
+    // Google OAuth 유저는 구글이 이미 인증했으므로 비밀번호 게이트 건너뜀
+    if (user?.provider === 'google' || isAdminSessionValid()) {
       setVerified(true)
     }
-  }, [])
+  }, [user])
 
   /** ADMIN role 미보유 시 홈으로 리다이렉트 */
   useEffect(() => {
