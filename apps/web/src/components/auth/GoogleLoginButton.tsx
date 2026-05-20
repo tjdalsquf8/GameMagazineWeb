@@ -57,7 +57,7 @@ export default function GoogleLoginButton() {
       <button
         type="button"
         onClick={handleGoogleLogin}
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-lg border border-gray-300 bg-white text-[#3c4043] text-sm font-medium transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-white dark:hover:bg-gray-50"
+        className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium transition-colors hover:bg-primary-hover"
       >
         <GoogleIcon />
         Google로 계속하기
