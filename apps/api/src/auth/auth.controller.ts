@@ -92,7 +92,7 @@ export class AuthController {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'lax' : 'strict',
+      sameSite: isProd ? 'none' : 'strict',
       // rememberMe: 30일 유지 / 미체크: 브라우저 닫으면 만료 (session cookie)
       ...(rememberMe ? { maxAge: 30 * 24 * 60 * 60 * 1000 } : {}),
       path: '/',
@@ -102,7 +102,7 @@ export class AuthController {
     res.cookie('accessToken', responseData.accessToken, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'lax' : 'strict',
+      sameSite: isProd ? 'none' : 'strict',
       maxAge: 3600000, // 1시간
       path: '/',
     })
@@ -121,14 +121,14 @@ export class AuthController {
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'strict',
+      sameSite: isProd ? 'none' : 'strict',
       path: '/',
     })
     // accessToken HttpOnly 쿠키도 함께 정리
     res.clearCookie('accessToken', {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'lax' : 'strict',
+      sameSite: isProd ? 'none' : 'strict',
       path: '/',
     })
     return { success: true, data: { message: '로그아웃 되었습니다' } }
@@ -152,7 +152,7 @@ export class AuthController {
     res.cookie('refreshToken', result.refreshToken, {
       httpOnly: true,
       secure: isProd,
-      sameSite: 'strict',
+      sameSite: isProd ? 'none' : 'strict',
       maxAge: 30 * 24 * 60 * 60 * 1000,
       path: '/',
     })
@@ -161,7 +161,7 @@ export class AuthController {
     res.cookie('accessToken', result.accessToken, {
       httpOnly: true,
       secure: isProd,
-      sameSite: isProd ? 'lax' : 'strict',
+      sameSite: isProd ? 'none' : 'strict',
       maxAge: 3600000, // 1시간
       path: '/',
     })
@@ -264,7 +264,7 @@ export class AuthController {
       res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? 'lax' : 'strict',
+        sameSite: isProd ? 'none' : 'strict',
         maxAge: 30 * 24 * 60 * 60 * 1000,
         path: '/',
       })
@@ -273,7 +273,7 @@ export class AuthController {
       res.cookie('accessToken', accessToken, {
         httpOnly: true,
         secure: isProd,
-        sameSite: isProd ? 'lax' : 'strict',
+        sameSite: isProd ? 'none' : 'strict',
         maxAge: 3600000,
         path: '/',
       })
