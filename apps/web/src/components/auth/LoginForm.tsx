@@ -1,10 +1,14 @@
 'use client'
 
+// 이메일/비밀번호 로그인 폼 컴포넌트
+// 유효성 검사, 로그인 API 호출, Google OAuth 진입점 버튼을 포함한다.
+
 import { useState, FormEvent } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { login, setAccessTokenCookie } from '@/lib/api/auth'
 import { useAuthStore } from '@/store/authStore'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
 
 interface FormErrors {
   email?: string
@@ -151,6 +155,8 @@ export default function LoginForm() {
           {isLoading ? '로그인 중...' : '로그인'}
         </button>
       </form>
+
+      <GoogleLoginButton />
 
       <p className="mt-6 text-center text-sm text-text-muted">
         아직 계정이 없으신가요?{' '}

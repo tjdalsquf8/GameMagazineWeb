@@ -8,6 +8,7 @@ import {
   Logger,
   HttpException,
   HttpStatus,
+  InternalServerErrorException,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { ConfigService } from "@nestjs/config";
@@ -521,6 +522,171 @@ export class AuthService {
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
       )
+    }
+  }
+
+  // ============================
+  // Google OAuth
+  // ============================
+
+  /**
+   * Google 프로필 정보로 기존 유저를 조회하거나 신규 유저를 생성한다.
+   * nickname 중복 시 뒤에 랜덤 4자리 숫자를 붙여 재시도한다.
+   */
+  async findOrCreateGoogleUser(googleUser: {
+    email: string
+    nickname: string
+    profileImage: string | null
+  }) {
+    try {
+      const existing = await this.prisma.user.findUnique({
+        where: { email: googleUser.email },
+        select: {
+          id: true,
+          email: true,
+          nickname: true,
+          role: true,
+          provider: true,
+          profileImage: true,
+          createdAt: true,
+          updatedAt: true,
+          isBanned: true,
+          bannedUntil: true,
+        },
+      })
+
+      if (existing) {
+        this.logger.log(`Google 로그인 기존 유저 반환: userId=${existing.id}`)
+        return existing
+      }
+
+      // 닉네임 중복 확인 후 고유한 닉네임 생성
+      const uniqueNickname = await this.generateUniqueNickname(googleUser.nickname)
+
+      const newUser = await this.prisma.user.create({
+        data: {
+          email: googleUser.email,
+          nickname: uniqueNickname,
+          password: null,
+          provider: 'GOOGLE',
+          profileImage: googleUser.profileImage,
+        },
+        select: {
+          id: true,
+          email: true,
+          nickname: true,
+          role: true,
+          provider: true,
+          profileImage: true,
+          createdAt: true,
+          updatedAt: true,
+          isBanned: true,
+          bannedUntil: true,
+        },
+      })
+
+      this.logger.log(`Google 신규 유저 생성: userId=${newUser.id}, email=${newUser.email}`)
+      return newUser
+    } catch (e) {
+      if (e instanceof HttpException) throw e
+      this.logger.error('findOrCreateGoogleUser 실패', e instanceof Error ? e.stack : e)
+      throw new InternalServerErrorException({
+        success: false,
+        error: { code: 'INTERNAL_001', message: '서버 오류가 발생했습니다' },
+      })
+    }
+  }
+
+  /**
+   * 닉네임 중복 시 뒤에 랜덤 4자리 숫자를 붙여 고유한 닉네임을 반환하는 헬퍼
+   */
+  private async generateUniqueNickname(base: string): Promise<string> {
+    const candidate = base.slice(0, 20) // 닉네임 최대 길이 고려
+    const existing = await this.prisma.user.findUnique({
+      where: { nickname: candidate },
+      select: { id: true },
+    })
+
+    if (!existing) return candidate
+
+    // 중복이면 4자리 랜덤 숫자 붙이기 (최대 5회 재시도)
+    for (let i = 0; i < 5; i++) {
+      const suffix = randomInt(1000, 9999).toString()
+      const uniqueCandidate = `${candidate.slice(0, 16)}${suffix}`
+      const dup = await this.prisma.user.findUnique({
+        where: { nickname: uniqueCandidate },
+        select: { id: true },
+      })
+      if (!dup) return uniqueCandidate
+    }
+
+    // 극히 드문 상황: timestamp 기반 폴백
+    return `${candidate.slice(0, 12)}${Date.now().toString().slice(-8)}`
+  }
+
+  /**
+   * Google 로그인 성공 후 JWT 발급 및 쿠키 세팅에 필요한 토큰 반환
+   * 계정 정지 상태인 경우 ForbiddenException을 던진다.
+   */
+  async loginWithGoogle(user: {
+    id: string
+    email: string
+    nickname: string
+    role: string
+    provider: string
+    profileImage: string | null
+    createdAt: Date
+    updatedAt: Date
+    isBanned: boolean
+    bannedUntil: Date | null
+  }): Promise<{ accessToken: string; refreshToken: string }> {
+    try {
+      // 계정 정지 체크
+      if (user.isBanned) {
+        const isExpired = user.bannedUntil && user.bannedUntil < new Date()
+        if (!isExpired) {
+          throw new ForbiddenException(
+            user.bannedUntil
+              ? `계정이 ${user.bannedUntil.toLocaleDateString('ko-KR')}까지 정지되었습니다`
+              : '계정이 영구 정지되었습니다',
+          )
+        }
+        // 정지 기간 만료 시 자동 해제
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { isBanned: false, bannedUntil: null, banReason: null },
+        })
+      }
+
+      // 마지막 로그인 시간 업데이트
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginAt: new Date() },
+      })
+
+      const payload = { sub: user.id, role: user.role }
+      const accessToken = this.jwtService.sign(payload, { expiresIn: '1h' })
+      const refreshToken = this.jwtService.sign(payload, {
+        secret: this.configService.getOrThrow<string>('JWT_REFRESH_SECRET'),
+        expiresIn: '30d',
+      })
+
+      // refresh token을 SHA-256 해시 후 DB 저장
+      const tokenHash = createHash('sha256').update(refreshToken).digest('hex')
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      await this.prisma.refreshToken.create({
+        data: { userId: user.id, tokenHash, expiresAt },
+      })
+
+      this.logger.log(`Google 로그인 토큰 발급 완료: userId=${user.id}`)
+      return { accessToken, refreshToken }
+    } catch (e) {
+      if (e instanceof HttpException) throw e
+      this.logger.error(`loginWithGoogle(${user.id}) 실패`, e instanceof Error ? e.stack : e)
+      throw new InternalServerErrorException({
+        success: false,
+        error: { code: 'INTERNAL_001', message: '서버 오류가 발생했습니다' },
+      })
     }
   }
 

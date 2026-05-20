@@ -1,7 +1,11 @@
 'use client'
 
+// 회원가입 1단계 컴포넌트 — 닉네임/이메일 입력 및 인증 코드 발송을 처리한다.
+// Google OAuth를 통한 간편 가입 버튼도 함께 제공한다.
+
 import { useState } from 'react'
 import { sendVerificationCode } from '@/lib/api/auth'
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
 
 interface RegisterStep1Props {
   onNext: (email: string, nickname: string) => void
@@ -123,6 +127,8 @@ export default function RegisterStep1({ onNext }: RegisterStep1Props) {
         )}
         {isLoading ? '인증 코드 발송 중...' : '인증 코드 발송'}
       </button>
+
+      <GoogleLoginButton />
     </form>
   )
 }

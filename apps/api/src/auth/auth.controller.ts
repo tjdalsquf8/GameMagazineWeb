@@ -1,12 +1,14 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   Res,
   Req,
   HttpCode,
   HttpStatus,
   UseGuards,
+  Logger,
 } from '@nestjs/common'
 import { Throttle } from '@nestjs/throttler'
 import { Response, Request } from 'express'
@@ -21,6 +23,7 @@ import { VerifyResetTokenDto } from './dto/verify-reset-token.dto'
 import { ResetPasswordDto } from './dto/reset-password.dto'
 import { VerifyPasswordDto } from './dto/verify-password.dto'
 import { JwtAuthGuard } from './guards/jwt-auth.guard'
+import { GoogleAuthGuard } from './guards/google-auth.guard'
 import { ConfigService } from '@nestjs/config'
 
 interface AuthenticatedRequest extends Request {
@@ -30,10 +33,27 @@ interface AuthenticatedRequest extends Request {
   }
 }
 
+interface GoogleAuthenticatedRequest extends Request {
+  user: {
+    id: string
+    email: string
+    nickname: string
+    role: string
+    provider: string
+    profileImage: string | null
+    createdAt: Date
+    updatedAt: Date
+    isBanned: boolean
+    bannedUntil: Date | null
+  }
+}
+
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 // setGlobalPrefix('api')로 /api prefix가 자동 적용되므로 'auth'만 선언
 @Controller('auth')
 export class AuthController {
+  private readonly logger = new Logger(AuthController.name)
+
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
@@ -198,5 +218,71 @@ export class AuthController {
     }
 
     return { success: true, data: { verified: true } }
+  }
+
+  // ============================
+  // 내 정보 조회 (OAuth 콜백 후 사용)
+  // ============================
+
+  /** GET /auth/me — 쿠키의 accessToken으로 현재 유저 정보 반환 */
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  getMe(@Req() req: AuthenticatedRequest & { user: Record<string, unknown> }) {
+    return { success: true, data: req.user }
+  }
+
+  // ============================
+  // Google OAuth
+  // ============================
+
+  /** GET /auth/google — Google 로그인 시작: Google 인증 페이지로 리다이렉트 */
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  googleLogin() {
+    // GoogleAuthGuard가 자동으로 Google 인증 페이지로 리다이렉트하므로 본문 불필요
+  }
+
+  /**
+   * GET /auth/google/callback — Google OAuth 콜백 처리
+   * 토큰을 HttpOnly 쿠키로 세팅 후 프론트엔드로 리다이렉트한다.
+   * 실패 시 /login?error=oauth 로 리다이렉트한다.
+   */
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleCallback(
+    @Req() req: GoogleAuthenticatedRequest,
+    @Res() res: Response,
+  ) {
+    const frontendUrl = this.configService.getOrThrow<string>('FRONTEND_URL')
+    const isProd = this.configService.get<string>('NODE_ENV') === 'production'
+
+    try {
+      const { accessToken, refreshToken } = await this.authService.loginWithGoogle(req.user)
+
+      // refreshToken — HttpOnly, 30일 유지
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'lax' : 'strict',
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: '/',
+      })
+
+      // accessToken — HttpOnly, 1시간 유지
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'lax' : 'strict',
+        maxAge: 3600000,
+        path: '/',
+      })
+
+      this.logger.log(`Google 콜백 성공: userId=${req.user.id}`)
+      return res.redirect(`${frontendUrl}/auth/google/callback`)
+    } catch (e) {
+      this.logger.error('Google 콜백 처리 실패', e instanceof Error ? e.stack : e)
+      return res.redirect(`${frontendUrl}/login?error=oauth`)
+    }
   }
 }
