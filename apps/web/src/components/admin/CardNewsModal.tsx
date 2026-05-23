@@ -1,7 +1,7 @@
 // 카드뉴스 생성 모달 — idle·loading·done·error 4단계 UI, 슬라이드 뷰어 + PNG 다운로드
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import {
   X,
@@ -30,6 +30,8 @@ type InputMode = 'url' | 'file'
 export default function CardNewsModal({ articleId, articleTitle, onClose }: Props) {
   const [status, setStatus] = useState<Status>('idle')
   const [slides, setSlides] = useState<string[]>([])
+  const [slideTitle, setSlideTitle] = useState('')
+  const [editingTitle, setEditingTitle] = useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
   const [inputMode, setInputMode] = useState<InputMode>('url')
@@ -38,8 +40,27 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
   const [isDownloading, setIsDownloading] = useState(false)
   const slideRefs = useRef<(HTMLDivElement | null)[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const slideContainerRef = useRef<HTMLDivElement>(null)
+  const [slideScale, setSlideScale] = useState(0.35)
 
   const { upload, validate, isLoading: isUploading, progress } = useImageUpload()
+
+  /** flex row 전체 너비에서 버튼(~30px×2) + gap(12px×2) 제외 후 scale 계산
+   *  모바일(640px 미만)은 ÷1440으로 슬라이드를 데스크탑 대비 75% 크기로 표시
+   */
+  useEffect(() => {
+    const updateScale = () => {
+      if (slideContainerRef.current) {
+        const totalWidth = slideContainerRef.current.offsetWidth
+        const available = Math.max(80, totalWidth - 84) // 버튼 2개 + gap 제외
+        const isMobile = window.innerWidth < 640
+        setSlideScale(available / (isMobile ? 1440 : 1080))
+      }
+    }
+    updateScale()
+    window.addEventListener('resize', updateScale)
+    return () => window.removeEventListener('resize', updateScale)
+  }, [status])
 
   /** 파일 선택 또는 드롭 시 R2 업로드 처리 */
   const handleFileChange = useCallback(
@@ -92,6 +113,8 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
       const res = await generateCardNews(articleId, imageUrl || undefined)
       if (res.success && res.data?.slides) {
         setSlides(res.data.slides)
+        setSlideTitle(res.data.title ?? '')
+        setEditingTitle(res.data.title ?? '')
         setCurrentIndex(0)
         setStatus('done')
       } else {
@@ -102,15 +125,38 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
     }
   }, [articleId, imageUrl])
 
-  /** 단일 슬라이드 PNG 다운로드 — html2canvas로 캡처 후 링크 클릭 트리거 */
+  /** 단일 슬라이드 PNG 다운로드 — el을 document.body에 clone 후 캡처
+   *  overflow:hidden 부모에 의한 클리핑을 피하기 위해 clone을 body에 직접 추가
+   */
   const downloadSlide = useCallback(async (index: number) => {
     const el = slideRefs.current[index]
     if (!el) return
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true, logging: false })
-    const link = document.createElement('a')
-    link.download = `cardnews_${index + 1}.png`
-    link.href = canvas.toDataURL('image/png')
-    link.click()
+
+    // 원본 el을 body에 복제 — overflow:hidden 부모 컨텍스트 탈출
+    const clone = el.cloneNode(true) as HTMLDivElement
+    clone.style.position = 'fixed'
+    clone.style.top = '-9999px'
+    clone.style.left = '-9999px'
+    clone.style.width = '1080px'
+    clone.style.height = '1350px'
+    clone.style.zIndex = '-1'
+    document.body.appendChild(clone)
+
+    try {
+      const canvas = await html2canvas(clone, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: 1080,
+        height: 1350,
+      })
+      const link = document.createElement('a')
+      link.download = `cardnews_${index + 1}.png`
+      link.href = canvas.toDataURL('image/png')
+      link.click()
+    } finally {
+      document.body.removeChild(clone)
+    }
   }, [])
 
   /** 전체 슬라이드 순차 다운로드 */
@@ -135,10 +181,24 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
     setCurrentIndex((prev) => Math.min(slides.length - 1, prev + 1))
   }
 
+  /** 제목 적용 — \n을 <br>로 변환 후 slides[0] HTML 내 기존 제목 교체 */
+  const applyTitleEdit = () => {
+    if (!editingTitle.trim() || editingTitle === slideTitle) return
+    const newTitle = editingTitle.trim().replace(/\n/g, '<br>')
+    setSlides((prev) =>
+      prev.map((html, i) =>
+        i === 0 ? html.replaceAll(slideTitle, newTitle) : html
+      )
+    )
+    setSlideTitle(editingTitle.trim())
+  }
+
   /** 재생성 — idle 상태로 초기화 */
   const handleReset = () => {
     setStatus('idle')
     setSlides([])
+    setSlideTitle('')
+    setEditingTitle('')
     setCurrentIndex(0)
     setImageUrl('')
     setPreviewUrl('')
@@ -155,7 +215,7 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       onClick={handleOverlayClick}
     >
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg mx-10 sm:mx-4 overflow-y-auto max-h-[67dvh] sm:max-h-[85dvh]">
         {/* 모달 헤더 */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-[var(--color-border)]">
           <div className="flex-1 min-w-0 pr-3">
@@ -175,7 +235,7 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
         </div>
 
         {/* 모달 바디 */}
-        <div className="px-5 py-5">
+        <div className="px-5 pt-5 pb-6">
           {/* idle: 배경 이미지 입력 + 생성 버튼 */}
           {status === 'idle' && (
             <div className="space-y-4">
@@ -276,11 +336,13 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                     {previewUrl && !isUploading && (
                       <div className="relative rounded-lg overflow-hidden border border-[var(--color-border)]">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={previewUrl}
-                          alt="배경 이미지 미리보기"
-                          className="w-full h-32 object-cover"
-                        />
+                        <div className="w-36 aspect-[4/5] mx-auto">
+                          <img
+                            src={previewUrl}
+                            alt="배경 이미지 미리보기"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                         <button
                           type="button"
                           onClick={() => {
@@ -373,9 +435,9 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
 
           {/* done: 슬라이드 뷰어 */}
           {status === 'done' && slides.length > 0 && (
-            <div className="space-y-4">
-              {/* 슬라이드 뷰어 영역 — 1080×1350을 0.35 scale로 축소 표시 */}
-              <div className="flex items-center justify-center gap-3">
+            <div className="space-y-4 pb-2">
+              {/* 슬라이드 뷰어 영역 — flex row 전체 너비 기준으로 scale 계산, 슬라이드 컨테이너는 정확히 1080*scale 너비 */}
+              <div ref={slideContainerRef} className="flex items-center justify-center gap-3">
                 {/* 이전 버튼 */}
                 <button
                   type="button"
@@ -387,11 +449,11 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                   <ChevronLeft size={18} />
                 </button>
 
-                {/* 슬라이드 렌더링 영역 */}
+                {/* 슬라이드 렌더링 영역 — 너비를 1080*scale로 고정해 빈 공간 없이 중앙 정렬 */}
                 <div
                   style={{
-                    width: 378,
-                    height: 473,
+                    width: Math.round(1080 * slideScale),
+                    height: Math.round(1350 * slideScale),
                     overflow: 'hidden',
                     position: 'relative',
                     flexShrink: 0,
@@ -402,7 +464,7 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                     <div key={i} style={{ display: i === currentIndex ? 'block' : 'none' }}>
                       <div
                         style={{
-                          transform: 'scale(0.35)',
+                          transform: `scale(${slideScale})`,
                           transformOrigin: 'top left',
                           width: 1080,
                           height: 1350,
@@ -455,6 +517,25 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
               <p className="text-center text-xs text-[var(--color-text-muted)]">
                 {currentIndex + 1} / {slides.length}
               </p>
+
+              {/* 제목 편집 — 띄어쓰기 등 직접 수정 후 적용 */}
+              <div className="flex gap-2 items-center">
+                <textarea
+                  value={editingTitle}
+                  onChange={(e) => setEditingTitle(e.target.value)}
+                  placeholder="제목 수정 (Enter = 줄바꿈)"
+                  rows={2}
+                  className="flex-1 px-3 py-1.5 rounded-lg border border-[var(--color-border)] bg-white dark:bg-gray-800 text-xs text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] resize-none"
+                />
+                <button
+                  type="button"
+                  onClick={applyTitleEdit}
+                  disabled={!editingTitle.trim() || editingTitle === slideTitle}
+                  className="px-3 py-1.5 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-xs font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-opacity whitespace-nowrap"
+                >
+                  적용
+                </button>
+              </div>
 
               {/* 액션 버튼 영역 */}
               <div className="flex gap-2">

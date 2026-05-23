@@ -18,7 +18,7 @@ import {
 import { Throttle, SkipThrottle } from '@nestjs/throttler'
 import { NewsService } from './news.service'
 import { NewsListQueryDto } from './dto/news-list-query.dto'
-import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto } from './dto/news-response.dto'
+import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto, CategoryTopNewsItemDto } from './dto/news-response.dto'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { AdminGuard } from '../admin/guards/admin.guard'
 import { ParseCuidPipe } from '../common/pipes/parse-cuid.pipe'
@@ -73,6 +73,14 @@ export class NewsController {
     // DB 과부하 방지 — limit 상한 50 강제
     const safeLimit = Math.min(limit, 50)
     const data = await this.newsService.getPopularNews(mainCategory, safeLimit)
+    return { success: true, data }
+  }
+
+  // GET /news/category-tops — Hero 섹션용 카테고리별 조회수 1위 뉴스 (최근 7일 내, 카테고리당 1개)
+  // :id 라우트보다 반드시 앞에 선언해야 NestJS 라우팅 충돌 방지
+  @Get('category-tops')
+  async getCategoryTopNews(): Promise<{ success: true; data: CategoryTopNewsItemDto[] }> {
+    const data = await this.newsService.getCategoryTopNews()
     return { success: true, data }
   }
 

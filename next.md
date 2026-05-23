@@ -290,6 +290,7 @@
 - `apps/api/src/news/news.service.ts` — `incrementViewCount()` 를 DB UPDATE 대신 `INCR news:view:{id}` 로 변경
 - 배치 작업(크론) 추가 — 5분마다 Redis 카운터를 DB에 반영 후 초기화
 - `apps/api/prisma/schema.prisma` — 변경 없음 (DB 컬럼 유지)
+- `apps/web/src/app/news/[id]/page.tsx` — `fetchArticle()` 의 `cache: 'no-store'` 를 Redis 캐시 조회로 교체 (조회수 증가 시 해당 캐시 키 invalidate)
 
 ---
 

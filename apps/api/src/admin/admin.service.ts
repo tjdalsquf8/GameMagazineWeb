@@ -885,7 +885,7 @@ export class AdminService {
   async generateCardNews(
     id: string,
     imageUrl?: string,
-  ): Promise<{ slides: string[] }> {
+  ): Promise<{ slides: string[]; title: string }> {
     // 1. 기사 조회
     const news = await this.findNewsOrThrow(id);
 
@@ -911,7 +911,7 @@ export class AdminService {
    - linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.50) 55%, rgba(0,0,0,0.88) 100%)
 
 ③ 로고
-   - 위치: 좌하단, padding: 0 52px 104px 52px
+   - 위치: 좌하단, padding: 0 52px 134px 52px
    - size: 40px, weight: 900
    - line-height: 1.1, letter-spacing: -0.01em
    - margin-bottom: 16px (제목과의 간격)
@@ -975,12 +975,30 @@ export class AdminService {
 
     this.logger.log(`[Admin] 카드뉴스 생성 시작: 기사 id=${id}`);
 
-    // 4. Claude API 호출
-    const message = await this.anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 8192,
-      messages: [{ role: "user", content: filledPrompt }],
-    });
+    // 4. Claude API 호출 — 과부하(529) 시 최대 3회 지수 백오프 재시도
+    let message: Anthropic.Message | null = null
+    const MAX_RETRIES = 3
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        message = await this.anthropic.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 8192,
+          messages: [{ role: 'user', content: filledPrompt }],
+        })
+        break
+      } catch (err) {
+        const isOverloaded =
+          err instanceof Error && (err.message.includes('529') || err.message.includes('overloaded'))
+        if (isOverloaded && attempt < MAX_RETRIES) {
+          const delay = attempt * 3000
+          this.logger.warn(`[Admin] 카드뉴스 API 과부하, ${delay / 1000}초 후 재시도 (${attempt}/${MAX_RETRIES - 1})`)
+          await new Promise((resolve) => setTimeout(resolve, delay))
+        } else {
+          throw err
+        }
+      }
+    }
+    if (!message) throw new Error('Claude API 호출 실패')
 
     // 5. JSON 파싱
     const firstContent = message.content[0];
@@ -1008,8 +1026,11 @@ export class AdminService {
 
     this.logger.log(`[Admin] 카드뉴스 생성 완료: 기사 id=${id}`);
 
-    // 6. slides 배열로 반환
-    return { slides: [parsed.slide1, parsed.slide2] };
+    // 6. slides 배열 + 실제 사용된 제목 반환 (프론트 제목 편집용)
+    return {
+      slides: [parsed.slide1, parsed.slide2],
+      title: news.rewrittenTitle ?? news.originalTitle,
+    };
   }
 
   // ============================

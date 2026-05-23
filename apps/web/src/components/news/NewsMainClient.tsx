@@ -1,11 +1,11 @@
 // 뉴스 메인 클라이언트 컴포넌트 — 대분류/소분류 카테고리 필터 및 페이지네이션 상태를 관리하고
 // HeroSection, NewsGrid, Pagination, 광고 배너를 조합하는 최상위 래퍼
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { env } from '@/lib/env'
 import type { CategorySlug } from '@/lib/mock/news'
 import type { MainCategoryValue } from '@/constants/categories'
-import type { NewsArticle, NewsListResponse } from '@/types/news'
+import type { NewsArticle, NewsListResponse, CategoryTopNewsItem } from '@/types/news'
 import { HeroSection } from './HeroSection'
 import { EditorPickSection } from './EditorPickSection'
 import { CategoryFilter } from './CategoryFilter'
@@ -15,6 +15,8 @@ import Pagination from '@/components/ui/Pagination'
 interface NewsMainClientProps {
   // SSR로 받은 초기 뉴스 데이터
   initialNews: NewsListResponse
+  // SSR로 받은 카테고리별 최상위 뉴스 — Hero 사이드카드용
+  categoryTops: CategoryTopNewsItem[]
 }
 
 // 페이지당 뉴스 표시 개수
@@ -30,7 +32,7 @@ const API_TO_HERO_SLUG: Record<string, CategorySlug> = {
 }
 
 // 뉴스 메인 전체 레이아웃 컴포넌트
-export function NewsMainClient({ initialNews }: NewsMainClientProps) {
+export function NewsMainClient({ initialNews, categoryTops }: NewsMainClientProps) {
   // 대분류 카테고리 필터 상태 — API 파라미터 값 기준 ('' = 전체)
   const [activeCategory, setActiveCategory] = useState<MainCategoryValue>('')
   // 소분류 카테고리 필터 상태 — null = 소분류 전체
@@ -98,14 +100,18 @@ export function NewsMainClient({ initialNews }: NewsMainClientProps) {
     fetchNews(activeCategory, activeSubCategory, page)
   }
 
+
+  const gridRef = useRef<HTMLElement>(null)
+  const paginationRef = useRef<HTMLDivElement>(null)
+
   // HeroSection에 전달할 mock CategorySlug (Hero는 mock 데이터 사용 유지)
   const heroSlug: CategorySlug = API_TO_HERO_SLUG[activeCategory] ?? 'all'
 
   return (
-    <div className="container-main py-6 md:py-10">
-      {/* Hero 섹션 — mock 데이터 유지 */}
+    <div className="container-main py-6 md:py-10 [overflow-anchor:none]">
+      {/* Hero 섹션 — 카테고리별 최상위 뉴스 사이드카드 표시 */}
       <section className="mb-10 md:mb-14">
-        <HeroSection activeCategory={heroSlug} />
+        <HeroSection activeCategory={heroSlug} categoryTops={categoryTops} />
       </section>
 
       {/* 에디터 픽 섹션 — 관리자 선정 뉴스/스폰서드 콘텐츠 노출 영역 */}
@@ -124,7 +130,7 @@ export function NewsMainClient({ initialNews }: NewsMainClientProps) {
       </div>
 
       {/* 최신 뉴스 그리드 */}
-      <section className="relative mb-4 md:mb-6">
+      <section ref={gridRef} className="relative mb-4 md:mb-6">
         {/* 로딩 중 반투명 오버레이 — 기존 뉴스 카드 유지한 채로 스피너 표시 */}
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-[var(--color-background)]/60 backdrop-blur-[2px]">
@@ -143,7 +149,7 @@ export function NewsMainClient({ initialNews }: NewsMainClientProps) {
       </div>
 
       {/* 페이지네이션 */}
-      <div className="mb-8">
+      <div ref={paginationRef} className="mb-8">
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}
