@@ -59,8 +59,8 @@ export function NewsCard({ news }: NewsCardProps) {
           <CategoryBadge category={category} />
         </div>
 
-        {/* 제목 */}
-        <h3 className="text-xs sm:text-sm font-medium text-[var(--color-text-primary)] line-clamp-2 leading-snug group-hover:text-[var(--color-primary)] transition-colors">
+        {/* 제목 — line-clamp-2로 최대 2줄, min-h로 1줄 제목도 2줄 공간 확보해 카드 높이 균일 유지 */}
+        <h3 className="text-xs sm:text-sm font-medium text-[var(--color-text-primary)] line-clamp-2 min-h-[3rem] leading-snug group-hover:text-[var(--color-primary)] transition-colors">
           {news.title}
         </h3>
 

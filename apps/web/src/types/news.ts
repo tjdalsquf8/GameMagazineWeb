@@ -36,3 +36,15 @@ export interface NewsDetail {
   viewCount: number
   createdAt: string
 }
+
+// 카테고리별 최상위 뉴스 아이템 — GET /api/news/category-tops 응답 data 배열 요소
+export interface CategoryTopNewsItem {
+  id: string // cuid — 뉴스 상세 링크: /news/:id
+  title: string
+  summary: string
+  thumbnail: string // 현재는 '' — 플레이스홀더로 대체
+  mainCategory: string // 'PC' | 'Mobile' | 'Console' | 'Esports'
+  subCategory: string
+  viewCount: number
+  publishedAt: string // ISO string
+}

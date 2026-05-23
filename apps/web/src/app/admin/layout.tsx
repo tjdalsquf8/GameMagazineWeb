@@ -77,7 +77,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   // Google OAuth 유저는 비밀번호 없으므로 게이트 건너뜀
   // 이메일 유저는 sessionStorage 인증 또는 비밀번호 게이트 통과 필요
-  if (!verified && user?.provider !== 'google') {
+  if (!verified && user?.provider !== 'GOOGLE') {
     return <AdminPasswordGate onVerified={() => setVerified(true)} />
   }
 

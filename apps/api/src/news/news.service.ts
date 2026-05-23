@@ -17,7 +17,7 @@ import {
   buildMatchContext,
 } from './pipeline/esports-collector'
 import { NewsListQueryDto } from './dto/news-list-query.dto'
-import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto } from './dto/news-response.dto'
+import { NewsListItemDto, NewsDetailDto, PopularNewsItemDto, CategoryTopNewsItemDto } from './dto/news-response.dto'
 
 // 파이프라인 실행 결과 통계 타입
 interface PipelineResult {
@@ -368,6 +368,57 @@ export class NewsService {
       title: item.rewrittenTitle,
       viewCount: item.viewCount,
     }))
+  }
+
+  // 카테고리별 조회수 1위 뉴스 조회 — Hero 섹션용 (최근 7일 내, 카테고리당 1개)
+  // PC·Mobile·Console·Esports 각 mainCategory별로 별도 쿼리 4회 실행
+  // 7일 내 데이터가 없는 카테고리는 결과에서 제외
+  async getCategoryTopNews(): Promise<CategoryTopNewsItemDto[]> {
+    const categories = ['PC', 'Mobile', 'Console', 'Esports'] as const
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+    try {
+      const results = await Promise.all(
+        categories.map((category) =>
+          this.prisma.news.findFirst({
+            where: {
+              status: 'PUBLISHED',
+              mainCategory: category,
+              createdAt: { gte: sevenDaysAgo },
+            },
+            orderBy: [{ viewCount: 'desc' }, { createdAt: 'desc' }],
+            select: {
+              id: true,
+              rewrittenTitle: true,
+              rewrittenSummary: true,
+              mainCategory: true,
+              subCategory: true,
+              viewCount: true,
+              createdAt: true,
+            },
+          }),
+        ),
+      )
+
+      const data: CategoryTopNewsItemDto[] = results
+        .filter((item): item is NonNullable<typeof item> => item !== null)
+        .map((item) => ({
+          id: item.id,
+          title: item.rewrittenTitle,
+          summary: item.rewrittenSummary,
+          thumbnail: '',  // News 모델에 thumbnailUrl 필드 미존재 — 스키마 추가 후 반영 필요
+          mainCategory: item.mainCategory,
+          subCategory: item.subCategory,
+          viewCount: item.viewCount,
+          publishedAt: item.createdAt.toISOString(),
+        }))
+
+      this.logger.log(`getCategoryTopNews: ${data.length}개 카테고리 조회 완료`)
+      return data
+    } catch (e) {
+      this.logger.error('getCategoryTopNews failed', e instanceof Error ? e.stack : e)
+      throw e
+    }
   }
 
   // 뉴스 조회수 증가 — 클라이언트 localStorage 하루 1회 제한과 연동

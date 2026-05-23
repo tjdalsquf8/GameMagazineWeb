@@ -33,7 +33,7 @@ interface ApiResponse<T> {
 // 뉴스 상세 데이터 fetch 함수 — 404 시 null 반환
 async function fetchArticle(id: string): Promise<NewsDetail | null> {
   const res = await fetch(`${env.apiUrl}/api/news/${id}`, {
-    next: { revalidate: 3600 },
+    cache: 'no-store',
   })
 
   if (res.status === 404) return null

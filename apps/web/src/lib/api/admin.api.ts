@@ -205,7 +205,7 @@ export async function generateCardNews(
   imageUrl?: string
 ): Promise<{
   success: boolean
-  data?: { slides: string[] }
+  data?: { slides: string[]; title: string }
   error?: { code: string; message: string }
 }> {
   return apiClient.post(`/api/admin/articles/${articleId}/card-news`, { imageUrl })

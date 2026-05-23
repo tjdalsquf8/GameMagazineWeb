@@ -263,16 +263,16 @@ export default function AdminArticlesPage() {
                       </button>
                     </span>
                   </th>
-                  {/* 원문 제목 — th/td 모두 항상 DOM에 유지, CSS hidden으로 함께 숨김 */}
+                  {/* 원문 제목 — th/td 모두 항상 DOM에 유지, CSS hidden으로 함께 숨김 / 모바일에서는 항상 hidden */}
                   <th
-                    className={`text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap ${showOriginalTitle ? '' : 'hidden'}`}
+                    className={`text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap ${showOriginalTitle ? 'hidden md:table-cell' : 'hidden'}`}
                   >
                     원문 제목
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap">
+                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap">
                     카테고리
                   </th>
-                  <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)]">
+                  <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)]">
                     소스
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)]">
@@ -281,7 +281,7 @@ export default function AdminArticlesPage() {
                   <th className="text-left px-4 py-3 text-xs font-medium text-[var(--color-text-muted)]">
                     상태
                   </th>
-                  <th className="text-right px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap">
+                  <th className="hidden md:table-cell text-right px-4 py-3 text-xs font-medium text-[var(--color-text-muted)] whitespace-nowrap">
                     발행일
                   </th>
                   <th className="text-right px-4 py-3 text-xs font-medium text-[var(--color-text-muted)]">
@@ -295,7 +295,11 @@ export default function AdminArticlesPage() {
               <tbody className="divide-y divide-[var(--color-border)]">
                 {articles.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-10 text-center text-[var(--color-text-muted)]">
+                    {/* 모바일: 제목+분류+상태+숨김+카드뉴스 = 5 / 데스크탑: 전체 9 (원문제목 미표시 기준) */}
+                    <td colSpan={5} className="py-10 text-center text-[var(--color-text-muted)] md:hidden">
+                      조건에 맞는 기사가 없습니다.
+                    </td>
+                    <td colSpan={9} className="hidden md:table-cell py-10 text-center text-[var(--color-text-muted)]">
                       조건에 맞는 기사가 없습니다.
                     </td>
                   </tr>
@@ -313,14 +317,14 @@ export default function AdminArticlesPage() {
                       <td className="px-4 py-3 max-w-[200px] truncate text-[var(--color-text-primary)] font-medium">
                         {article.title}
                       </td>
-                      {/* 원문 제목 — td는 항상 DOM에 유지, CSS로만 숨김 (조건부 렌더링 금지) */}
+                      {/* 원문 제목 — td는 항상 DOM에 유지, CSS로만 숨김 / 모바일에서는 항상 hidden */}
                       <td
-                        className={`px-4 py-3 max-w-[160px] truncate text-[var(--color-text-muted)] text-xs ${showOriginalTitle ? '' : 'hidden'}`}
+                        className={`px-4 py-3 max-w-[160px] truncate text-[var(--color-text-muted)] text-xs ${showOriginalTitle ? 'hidden md:table-cell' : 'hidden'}`}
                       >
                         {article.originalTitle}
                       </td>
-                      {/* 카테고리 */}
-                      <td className="px-4 py-3 whitespace-nowrap">
+                      {/* 카테고리 — 모바일 숨김 */}
+                      <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap">
                         <span className="text-xs text-[var(--color-text-secondary)]">
                           {article.mainCategory}
                           {article.subCategory && (
@@ -331,8 +335,8 @@ export default function AdminArticlesPage() {
                           )}
                         </span>
                       </td>
-                      {/* 소스 */}
-                      <td className="px-4 py-3 text-xs text-[var(--color-text-secondary)] whitespace-nowrap">
+                      {/* 소스 — 모바일 숨김 */}
+                      <td className="hidden md:table-cell px-4 py-3 text-xs text-[var(--color-text-secondary)] whitespace-nowrap">
                         {article.sourceName}
                       </td>
                       {/* 분류 방법 */}
@@ -346,13 +350,13 @@ export default function AdminArticlesPage() {
                       {/* 상태 */}
                       <td className="px-4 py-3">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusBadgeClass(article.status)}`}
+                          className={`px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${statusBadgeClass(article.status)}`}
                         >
                           {statusLabel(article.status)}
                         </span>
                       </td>
-                      {/* 발행일 */}
-                      <td className="px-4 py-3 text-right text-xs text-[var(--color-text-muted)] whitespace-nowrap">
+                      {/* 발행일 — 모바일 숨김 */}
+                      <td className="hidden md:table-cell px-4 py-3 text-right text-xs text-[var(--color-text-muted)] whitespace-nowrap">
                         {formatKST(article.publishedAt)}
                       </td>
                       {/* 숨김 컬럼 — 숨기기/공개 버튼 */}
@@ -386,7 +390,7 @@ export default function AdminArticlesPage() {
                             e.stopPropagation()
                             setCardNewsArticle({ id: article.id, title: article.title })
                           }}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors whitespace-nowrap"
                           title="카드뉴스 만들기"
                           aria-label="카드뉴스 만들기"
                         >

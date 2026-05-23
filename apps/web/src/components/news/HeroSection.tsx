@@ -1,56 +1,135 @@
 // Hero 섹션 묶음 컴포넌트 — HeroMain + HeroSideCard를 조합
 // 자동 순환 상태 관리 및 사이드카드 클릭 처리 담당 (Client Component)
+// categoryTops가 비어있으면 mock 데이터로 fallback (안전장치)
 'use client'
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { CategorySlug, SideNews } from '@/lib/mock/news'
+import type { CategorySlug, SideNews, HeroNews } from '@/lib/mock/news'
 import { mockHeroNewsByCategory } from '@/lib/mock/news'
+import type { CategoryTopNewsItem } from '@/types/news'
 import { HeroMain } from './HeroMain'
 import { HeroSideCard } from './HeroSideCard'
 
-// 자동 순환 카테고리 순서
-const AUTO_SLIDE_ORDER: CategorySlug[] = ['pc', 'mobile', 'console', 'esports']
+// 자동 순환 카테고리 순서 (API mainCategory 값 기준)
+const AUTO_SLIDE_ORDER: string[] = ['PC', 'Mobile', 'Console', 'Esports']
+
+// AUTO_SLIDE_ORDER 인덱스 → CategorySlug 매핑 (인디케이터용)
+const SLIDE_TO_SLUG: Record<string, CategorySlug> = {
+  PC: 'pc',
+  Mobile: 'mobile',
+  Console: 'console',
+  Esports: 'esports',
+}
 
 interface HeroSectionProps {
   activeCategory: CategorySlug
+  // SSR에서 받은 카테고리별 최상위 뉴스 목록
+  categoryTops: CategoryTopNewsItem[]
+}
+
+/** CategoryTopNewsItem → HeroNews 변환 함수 — HeroMain 컴포넌트 타입에 맞춤 */
+function toHeroNews(item: CategoryTopNewsItem): HeroNews {
+  return {
+    id: 0, // HeroMain 내부에서 미사용
+    slug: item.id, // cuid — /news/:id 링크용
+    title: item.title,
+    summary: item.summary,
+    thumbnail: item.thumbnail || '/images/news-placeholder.png',
+    category: {
+      id: 0,
+      name: item.mainCategory,
+      slug: item.mainCategory.toLowerCase() as CategorySlug,
+    },
+    viewCount: item.viewCount,
+    readTime: 3, // 기본값
+    publishedAt: item.publishedAt,
+  }
+}
+
+/** CategoryTopNewsItem → SideNews 변환 함수 — HeroSideCard 컴포넌트 타입에 맞춤 */
+function toSideNews(item: CategoryTopNewsItem): SideNews {
+  return {
+    id: 0, // SideNews 내부에서 미사용
+    slug: item.id, // cuid — active 판별 및 링크용
+    title: item.title,
+    thumbnail: item.thumbnail || '/images/news-placeholder.png',
+    category: {
+      id: 0,
+      name: item.mainCategory,
+      slug: item.mainCategory.toLowerCase() as CategorySlug,
+    },
+    viewCount: item.viewCount,
+    readTime: 3, // 기본값
+    publishedAt: item.publishedAt,
+  }
 }
 
 // Hero 섹션 컴포넌트 — 자동 순환 및 수동 선택 처리
-export function HeroSection({ activeCategory }: HeroSectionProps) {
-  // 전체 탭 자동 순환 인덱스 (0~3)
+export function HeroSection({ activeCategory, categoryTops }: HeroSectionProps) {
+  // 전체 탭 자동 순환 인덱스 (0~3, AUTO_SLIDE_ORDER 기준)
   const [currentAutoIndex, setCurrentAutoIndex] = useState(0)
   // 사이드카드 수동 클릭 후 오버라이드 상태
   const [manualOverride, setManualOverride] = useState(false)
-  // 수동 선택된 뉴스 (null이면 자동 순환 기준 사용)
-  const [selectedNews, setSelectedNews] = useState<SideNews | null>(null)
+  // 수동 선택된 뉴스 slug (null이면 자동 순환 기준 사용)
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null)
   // 페이드 전환 트리거
   const [isFading, setIsFading] = useState(false)
   // 수동 오버라이드 복귀 타이머 ref (중복 타이머 방지)
   const manualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const categoryData = mockHeroNewsByCategory[activeCategory]
+  // API 데이터 유효 여부 — 비어있으면 mock fallback 사용
+  const hasApiData = categoryTops.length > 0
+
+  // 사이드카드에 표시할 뉴스 목록 결정
+  // - 전체 탭: 각 카테고리 1위 뉴스 4개 (AUTO_SLIDE_ORDER 순서)
+  // - 특정 카테고리 탭: 사이드카드 없음 (hero main만 표시)
+  const sideItems: SideNews[] = (() => {
+    if (activeCategory !== 'all') return []
+    if (!hasApiData) {
+      return mockHeroNewsByCategory['all'].sides
+    }
+    return AUTO_SLIDE_ORDER.map((cat) => categoryTops.find((item) => item.mainCategory === cat))
+      .filter((item): item is CategoryTopNewsItem => item !== undefined)
+      .map(toSideNews)
+  })()
 
   // 현재 Hero 메인에 표시할 뉴스 결정
-  // - 전체 탭 + 자동 순환: AUTO_SLIDE_ORDER[currentAutoIndex] 카테고리의 top1
-  // - 전체 탭 + 수동 선택: selectedNews를 HeroNews로 확장
-  // - 특정 카테고리 탭: 해당 카테고리 top1 고정
-  const currentHeroNews = (() => {
+  const currentHeroNews: HeroNews = (() => {
+    // 특정 카테고리 탭: 해당 카테고리 1위 뉴스 표시
     if (activeCategory !== 'all') {
-      return categoryData.top1
-    }
-    if (manualOverride && selectedNews) {
-      // 사이드카드에서 선택된 뉴스를 Hero용으로 변환 (summary는 빈 문자열 처리)
-      const heroSlug = selectedNews.slug
-      // all sides에서 매칭되는 카테고리의 top1에서 summary 찾기
-      const matchedCategory = selectedNews.category.slug as CategorySlug
-      const matchedData = mockHeroNewsByCategory[matchedCategory]
-      if (matchedData && matchedData.top1.slug === heroSlug) {
-        return matchedData.top1
+      if (!hasApiData) {
+        return mockHeroNewsByCategory[activeCategory].top1
       }
-      return { ...selectedNews, summary: '' }
+      const mainCat = activeCategory.charAt(0).toUpperCase() + activeCategory.slice(1)
+      // 'esports' → 'Esports' 특수 처리
+      const normalizedCat = activeCategory === 'esports' ? 'Esports' : mainCat
+      const found = categoryTops.find((item) => item.mainCategory === normalizedCat)
+      return found ? toHeroNews(found) : mockHeroNewsByCategory[activeCategory].top1
     }
-    // 자동 순환: 해당 카테고리 slug의 top1 데이터 사용
-    const autoSlug = AUTO_SLIDE_ORDER[currentAutoIndex]
-    return mockHeroNewsByCategory[autoSlug].top1
+
+    // 전체 탭 + 수동 선택: 선택된 slug의 뉴스 표시
+    if (manualOverride && selectedSlug !== null) {
+      if (!hasApiData) {
+        // mock fallback에서 slug 매칭 시도
+        const allSides = mockHeroNewsByCategory['all'].sides
+        const matched = allSides.find((s) => s.slug === selectedSlug)
+        if (matched) {
+          const catData = mockHeroNewsByCategory[matched.category.slug as CategorySlug]
+          return catData ? catData.top1 : { ...matched, summary: '' }
+        }
+        return mockHeroNewsByCategory['all'].top1
+      }
+      const found = categoryTops.find((item) => item.id === selectedSlug)
+      return found ? toHeroNews(found) : toHeroNews(categoryTops[0])
+    }
+
+    // 전체 탭 + 자동 순환: AUTO_SLIDE_ORDER[currentAutoIndex] 카테고리 1위
+    if (!hasApiData) {
+      const mockSlug = SLIDE_TO_SLUG[AUTO_SLIDE_ORDER[currentAutoIndex]]
+      return mockHeroNewsByCategory[mockSlug ?? 'pc'].top1
+    }
+    const autoCat = AUTO_SLIDE_ORDER[currentAutoIndex]
+    const found = categoryTops.find((item) => item.mainCategory === autoCat)
+    return found ? toHeroNews(found) : toHeroNews(categoryTops[0])
   })()
 
   // 현재 Hero에 표시 중인 뉴스의 slug (사이드카드 active 판별용)
@@ -70,7 +149,7 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
     if (manualTimerRef.current) clearTimeout(manualTimerRef.current)
     manualTimerRef.current = setTimeout(() => {
       setManualOverride(false)
-      setSelectedNews(null)
+      setSelectedSlug(null)
     }, 10000)
   }, [])
 
@@ -89,18 +168,20 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
   useEffect(() => {
     setCurrentAutoIndex(0)
     setManualOverride(false)
-    setSelectedNews(null)
+    setSelectedSlug(null)
   }, [activeCategory])
 
   // 사이드카드 클릭 핸들러 — 10초 후 자동 순환 복귀
   const handleSideCardClick = useCallback(
     (news: SideNews) => {
       fadeTransition(() => {
-        setSelectedNews(news)
+        setSelectedSlug(news.slug)
         setManualOverride(true)
         // 전체 탭에서 사이드카드 클릭 시 인디케이터 동기화
         if (activeCategory === 'all') {
-          const idx = AUTO_SLIDE_ORDER.indexOf(news.category.slug as CategorySlug)
+          const idx = AUTO_SLIDE_ORDER.findIndex(
+            (cat) => cat.toLowerCase() === news.category.slug.toLowerCase()
+          )
           if (idx !== -1) setCurrentAutoIndex(idx)
         }
       })
@@ -114,7 +195,7 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
     fadeTransition(() => {
       setCurrentAutoIndex((prev) => (prev - 1 + AUTO_SLIDE_ORDER.length) % AUTO_SLIDE_ORDER.length)
       setManualOverride(true)
-      setSelectedNews(null)
+      setSelectedSlug(null)
     })
     startManualTimer()
   }, [fadeTransition, startManualTimer])
@@ -124,7 +205,7 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
     fadeTransition(() => {
       setCurrentAutoIndex((prev) => (prev + 1) % AUTO_SLIDE_ORDER.length)
       setManualOverride(true)
-      setSelectedNews(null)
+      setSelectedSlug(null)
     })
     startManualTimer()
   }, [fadeTransition, startManualTimer])
@@ -141,20 +222,21 @@ export function HeroSection({ activeCategory }: HeroSectionProps) {
         onNext={activeCategory === 'all' ? handleNext : undefined}
       />
 
-      {/* 우측 사이드카드 목록 (모바일에서는 숨김) */}
-      {/* justify-between 제거 — 카테고리 탭(3개)일 때 간격이 과도하게 벌어지는 문제 방지 */}
-      <div className="hidden md:flex flex-col gap-2">
-        {categoryData.sides.map((sideNews, index) => (
-          <HeroSideCard
-            key={sideNews.id}
-            news={sideNews}
-            activeSlug={activeHeroSlug}
-            onClick={handleSideCardClick}
-            rank={activeCategory === 'all' ? 1 : index + 2}
-            isAllCategory={activeCategory === 'all'}
-          />
-        ))}
-      </div>
+      {/* 우측 사이드카드 목록 — 전체 탭에서만 표시, 모바일 숨김 */}
+      {sideItems.length > 0 && (
+        <div className="hidden md:flex flex-col gap-2">
+          {sideItems.map((sideNews) => (
+            <HeroSideCard
+              key={sideNews.slug}
+              news={sideNews}
+              activeSlug={activeHeroSlug}
+              onClick={handleSideCardClick}
+              rank={1}
+              isAllCategory={true}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

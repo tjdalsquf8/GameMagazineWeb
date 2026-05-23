@@ -102,6 +102,16 @@ export function UserMenu({ variant, onClose }: UserMenuProps) {
         >
           마이페이지
         </Link>
+        {/* 관리자 페이지 — ADMIN 롤 전용 */}
+        {user?.role === 'ADMIN' && (
+          <Link
+            href="/admin/dashboard"
+            onClick={onClose}
+            className="flex items-center min-h-[48px] px-2 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+          >
+            관리자 페이지
+          </Link>
+        )}
         {/* 로그아웃 버튼 */}
         <button
           onClick={() => {
@@ -154,6 +164,16 @@ export function UserMenu({ variant, onClose }: UserMenuProps) {
           >
             마이페이지
           </Link>
+          {/* 관리자 페이지 — ADMIN 롤 전용 */}
+          {user?.role === 'ADMIN' && (
+            <Link
+              href="/admin/dashboard"
+              onClick={() => setIsOpen(false)}
+              className="block px-4 py-2 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)] transition-colors"
+            >
+              관리자 페이지
+            </Link>
+          )}
           {/* 로그아웃 버튼 */}
           <button
             onClick={() => {

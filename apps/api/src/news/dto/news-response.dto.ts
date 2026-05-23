@@ -32,3 +32,15 @@ export class PopularNewsItemDto {
   title!: string
   viewCount!: number
 }
+
+// Hero 섹션용 카테고리별 조회수 1위 뉴스 아이템 형태
+export class CategoryTopNewsItemDto {
+  id!: string
+  title!: string       // rewrittenTitle
+  summary!: string     // rewrittenSummary
+  thumbnail!: string   // thumbnailUrl (null이면 빈 문자열)
+  mainCategory!: string
+  subCategory!: string
+  viewCount!: number
+  publishedAt!: string // createdAt ISO string
+}
