@@ -296,10 +296,16 @@ export default function AdminArticlesPage() {
                 {articles.length === 0 ? (
                   <tr>
                     {/* 모바일: 제목+분류+상태+숨김+카드뉴스 = 5 / 데스크탑: 전체 9 (원문제목 미표시 기준) */}
-                    <td colSpan={5} className="py-10 text-center text-[var(--color-text-muted)] md:hidden">
+                    <td
+                      colSpan={5}
+                      className="py-10 text-center text-[var(--color-text-muted)] md:hidden"
+                    >
                       조건에 맞는 기사가 없습니다.
                     </td>
-                    <td colSpan={9} className="hidden md:table-cell py-10 text-center text-[var(--color-text-muted)]">
+                    <td
+                      colSpan={9}
+                      className="hidden md:table-cell py-10 text-center text-[var(--color-text-muted)]"
+                    >
                       조건에 맞는 기사가 없습니다.
                     </td>
                   </tr>

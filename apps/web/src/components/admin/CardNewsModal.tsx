@@ -186,9 +186,7 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
     if (!editingTitle.trim() || editingTitle === slideTitle) return
     const newTitle = editingTitle.trim().replace(/\n/g, '<br>')
     setSlides((prev) =>
-      prev.map((html, i) =>
-        i === 0 ? html.replaceAll(slideTitle, newTitle) : html
-      )
+      prev.map((html, i) => (i === 0 ? html.replaceAll(slideTitle, newTitle) : html))
     )
     setSlideTitle(editingTitle.trim())
   }

@@ -100,7 +100,6 @@ export function NewsMainClient({ initialNews, categoryTops }: NewsMainClientProp
     fetchNews(activeCategory, activeSubCategory, page)
   }
 
-
   const gridRef = useRef<HTMLElement>(null)
   const paginationRef = useRef<HTMLDivElement>(null)
 
