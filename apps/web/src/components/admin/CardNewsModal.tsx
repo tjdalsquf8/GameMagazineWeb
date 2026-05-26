@@ -3,16 +3,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import html2canvas from 'html2canvas'
-import {
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  RefreshCw,
-  Loader2,
-  Upload,
-  Link,
-} from 'lucide-react'
+import { X, ChevronLeft, ChevronRight, Download, RefreshCw, Loader2, Upload } from 'lucide-react'
 import { generateCardNews } from '@/lib/api/admin.api'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import CardNewsSlide from './CardNewsSlide'
@@ -24,7 +15,6 @@ interface Props {
 }
 
 type Status = 'idle' | 'loading' | 'done' | 'error'
-type InputMode = 'url' | 'file'
 
 /** 카드뉴스 생성 모달 컴포넌트 */
 export default function CardNewsModal({ articleId, articleTitle, onClose }: Props) {
@@ -34,7 +24,6 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
   const [editingTitle, setEditingTitle] = useState('')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [imageUrl, setImageUrl] = useState('')
-  const [inputMode, setInputMode] = useState<InputMode>('url')
   const [uploadError, setUploadError] = useState('')
   const [previewUrl, setPreviewUrl] = useState('')
   const [isDownloading, setIsDownloading] = useState(false)
@@ -98,14 +87,6 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
     if (file) handleFileChange(file)
   }
 
-  /** 탭 전환 시 이미지 상태 초기화 */
-  const handleModeChange = (mode: InputMode) => {
-    setInputMode(mode)
-    setImageUrl('')
-    setPreviewUrl('')
-    setUploadError('')
-  }
-
   /** 슬라이드 생성 요청 — API 호출 후 상태 전환 */
   const handleGenerate = useCallback(async () => {
     setStatus('loading')
@@ -125,8 +106,50 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
     }
   }, [articleId, imageUrl])
 
+  /** 외부 이미지 URL인지 판별 — 현재 오리진과 다른 도메인이면 true */
+  const isExternalUrl = (url: string): boolean => {
+    try {
+      const parsed = new URL(url)
+      return parsed.origin !== window.location.origin
+    } catch {
+      return false
+    }
+  }
+
+  /** 외부 이미지 URL을 /api/proxy-image 경유 URL로 변환 */
+  const toProxyUrl = (url: string): string => `/api/proxy-image?url=${encodeURIComponent(url)}`
+
+  /** clone 내부의 모든 외부 이미지를 프록시 URL로 교체 — CORS 우회를 위해 html2canvas 캡처 직전 호출
+   *  처리 대상: img[src], [style*="background-image"] url(...)
+   */
+  const replaceExternalImages = (container: HTMLElement): void => {
+    // img 태그 src 교체
+    container.querySelectorAll<HTMLImageElement>('img').forEach((img) => {
+      if (img.src && isExternalUrl(img.src)) {
+        img.src = toProxyUrl(img.src)
+      }
+    })
+
+    // 인라인 style background-image url() 교체
+    container.querySelectorAll<HTMLElement>('[style]').forEach((el) => {
+      const bg = el.style.backgroundImage
+      if (!bg) return
+      // url("...") 또는 url('...') 또는 url(...) 패턴 추출
+      const replaced = bg.replace(/url\((['"]?)([^'")\s]+)\1\)/g, (_match, quote, rawUrl) => {
+        if (isExternalUrl(rawUrl)) {
+          return `url(${quote}${toProxyUrl(rawUrl)}${quote})`
+        }
+        return _match
+      })
+      if (replaced !== bg) {
+        el.style.backgroundImage = replaced
+      }
+    })
+  }
+
   /** 단일 슬라이드 PNG 다운로드 — el을 document.body에 clone 후 캡처
    *  overflow:hidden 부모에 의한 클리핑을 피하기 위해 clone을 body에 직접 추가
+   *  외부 이미지는 프록시 URL로 교체하여 CORS 검정화면 방지
    */
   const downloadSlide = useCallback(async (index: number) => {
     const el = slideRefs.current[index]
@@ -140,6 +163,9 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
     clone.style.width = '1080px'
     clone.style.height = '1350px'
     clone.style.zIndex = '-1'
+
+    // 외부 이미지를 프록시 URL로 교체한 뒤 body에 추가
+    replaceExternalImages(clone)
     document.body.appendChild(clone)
 
     try {
@@ -157,7 +183,7 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
     } finally {
       document.body.removeChild(clone)
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   /** 전체 슬라이드 순차 다운로드 */
   const downloadAll = useCallback(async () => {
@@ -243,146 +269,93 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                   <span className="ml-1 text-[var(--color-text-muted)] font-normal">(선택)</span>
                 </p>
 
-                {/* URL / 파일 탭 */}
-                <div className="flex rounded-lg border border-[var(--color-border)] overflow-hidden mb-3">
-                  <button
-                    type="button"
-                    onClick={() => handleModeChange('url')}
-                    className={[
-                      'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors',
-                      inputMode === 'url'
-                        ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
-                    ].join(' ')}
-                  >
-                    <Link size={12} />
-                    URL 입력
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleModeChange('file')}
-                    className={[
-                      'flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors',
-                      inputMode === 'file'
-                        ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
-                        : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface)]',
-                    ].join(' ')}
-                  >
-                    <Upload size={12} />
-                    파일 업로드
-                  </button>
-                </div>
+                {/* 파일 업로드 */}
+                <div>
+                  {/* 업로드 전: 드롭존 */}
+                  {!previewUrl && !isUploading && (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-primary)] hover:bg-[var(--color-surface)] cursor-pointer transition-colors"
+                    >
+                      <Upload size={20} className="text-[var(--color-text-muted)]" />
+                      <p className="text-xs text-[var(--color-text-secondary)] text-center">
+                        클릭하거나 파일을 드래그해 주세요
+                        <br />
+                        <span className="text-[var(--color-text-muted)]">
+                          PNG, JPG, WEBP · 최대 10MB
+                        </span>
+                      </p>
+                    </div>
+                  )}
 
-                {/* URL 입력 */}
-                {inputMode === 'url' && (
-                  <div className="space-y-1.5">
-                    <input
-                      id="card-image-url"
-                      type="url"
-                      value={imageUrl}
-                      onChange={(e) => setImageUrl(e.target.value)}
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-3 py-2 rounded-lg border border-[var(--color-border)] bg-white dark:bg-gray-800 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]"
-                    />
-                    <p className="text-xs text-[var(--color-text-muted)]">
+                  {/* 업로드 중: 진행률 바 */}
+                  {isUploading && (
+                    <div className="flex flex-col items-center justify-center gap-3 py-6">
+                      <Loader2 size={20} className="animate-spin text-[var(--color-primary)]" />
+                      <div className="w-full bg-[var(--color-border)] rounded-full h-1.5">
+                        <div
+                          className="bg-[var(--color-primary)] h-1.5 rounded-full transition-all"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+                      <p className="text-xs text-[var(--color-text-muted)]">{progress}%</p>
+                    </div>
+                  )}
+
+                  {/* 업로드 완료: 미리보기 + 재선택 */}
+                  {previewUrl && !isUploading && (
+                    <div className="relative rounded-lg overflow-hidden border border-[var(--color-border)]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <div className="w-36 aspect-[4/5] mx-auto">
+                        <img
+                          src={previewUrl}
+                          alt="배경 이미지 미리보기"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPreviewUrl('')
+                          setImageUrl('')
+                          fileInputRef.current?.click()
+                        }}
+                        className="absolute top-2 right-2 p-1 rounded-md bg-black/50 text-white hover:bg-black/70 transition-colors"
+                        aria-label="이미지 재선택"
+                      >
+                        <RefreshCw size={12} />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 해상도 힌트 */}
+                  {!previewUrl && !isUploading && (
+                    <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
                       권장 해상도:{' '}
                       <span className="font-medium text-[var(--color-text-secondary)]">
                         1080 × 1350px (4:5 세로)
                       </span>{' '}
                       — 카드 전체를 꽉 채워 선명하게 출력됩니다.
                     </p>
-                  </div>
-                )}
+                  )}
 
-                {/* 파일 업로드 */}
-                {inputMode === 'file' && (
-                  <div>
-                    {/* 업로드 전: 드롭존 */}
-                    {!previewUrl && !isUploading && (
-                      <div
-                        onClick={() => fileInputRef.current?.click()}
-                        onDragOver={handleDragOver}
-                        onDrop={handleDrop}
-                        className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg border-2 border-dashed border-[var(--color-border)] hover:border-[var(--color-primary)] hover:bg-[var(--color-surface)] cursor-pointer transition-colors"
-                      >
-                        <Upload size={20} className="text-[var(--color-text-muted)]" />
-                        <p className="text-xs text-[var(--color-text-secondary)] text-center">
-                          클릭하거나 파일을 드래그해 주세요
-                          <br />
-                          <span className="text-[var(--color-text-muted)]">
-                            PNG, JPG, WEBP · 최대 10MB
-                          </span>
-                        </p>
-                      </div>
-                    )}
+                  {/* 에러 메시지 */}
+                  {uploadError && <p className="mt-1.5 text-xs text-red-500">{uploadError}</p>}
 
-                    {/* 업로드 중: 진행률 바 */}
-                    {isUploading && (
-                      <div className="flex flex-col items-center justify-center gap-3 py-6">
-                        <Loader2 size={20} className="animate-spin text-[var(--color-primary)]" />
-                        <div className="w-full bg-[var(--color-border)] rounded-full h-1.5">
-                          <div
-                            className="bg-[var(--color-primary)] h-1.5 rounded-full transition-all"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                        <p className="text-xs text-[var(--color-text-muted)]">{progress}%</p>
-                      </div>
-                    )}
-
-                    {/* 업로드 완료: 미리보기 + 재선택 */}
-                    {previewUrl && !isUploading && (
-                      <div className="relative rounded-lg overflow-hidden border border-[var(--color-border)]">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <div className="w-36 aspect-[4/5] mx-auto">
-                          <img
-                            src={previewUrl}
-                            alt="배경 이미지 미리보기"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPreviewUrl('')
-                            setImageUrl('')
-                            fileInputRef.current?.click()
-                          }}
-                          className="absolute top-2 right-2 p-1 rounded-md bg-black/50 text-white hover:bg-black/70 transition-colors"
-                          aria-label="이미지 재선택"
-                        >
-                          <RefreshCw size={12} />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* 해상도 힌트 */}
-                    {!previewUrl && !isUploading && (
-                      <p className="mt-1.5 text-xs text-[var(--color-text-muted)]">
-                        권장 해상도:{' '}
-                        <span className="font-medium text-[var(--color-text-secondary)]">
-                          1080 × 1350px (4:5 세로)
-                        </span>{' '}
-                        — 카드 전체를 꽉 채워 선명하게 출력됩니다.
-                      </p>
-                    )}
-
-                    {/* 에러 메시지 */}
-                    {uploadError && <p className="mt-1.5 text-xs text-red-500">{uploadError}</p>}
-
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/png,image/jpeg,image/jpg,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) handleFileChange(file)
-                        e.target.value = ''
-                      }}
-                    />
-                  </div>
-                )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (file) handleFileChange(file)
+                      e.target.value = ''
+                    }}
+                  />
+                </div>
               </div>
 
               <button

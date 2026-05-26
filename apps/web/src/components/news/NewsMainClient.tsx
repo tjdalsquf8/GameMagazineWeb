@@ -136,7 +136,7 @@ export function NewsMainClient({ initialNews, categoryTops }: NewsMainClientProp
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-[var(--color-border)] border-t-[var(--color-primary)]" />
           </div>
         )}
-        <NewsGrid news={news} />
+        <NewsGrid news={news} subCategory={activeSubCategory} />
       </section>
 
       {/* 가로 광고 배너 — 페이지네이션 위 */}

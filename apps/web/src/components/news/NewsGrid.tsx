@@ -8,10 +8,11 @@ const PAGE_SIZE = 20
 
 interface NewsGridProps {
   news: NewsArticle[]
+  subCategory?: string | null
 }
 
 // 최신 뉴스 그리드 컴포넌트
-export function NewsGrid({ news }: NewsGridProps) {
+export function NewsGrid({ news, subCategory }: NewsGridProps) {
   const placeholderCount = Math.max(0, PAGE_SIZE - news.length)
 
   return (
@@ -46,7 +47,9 @@ export function NewsGrid({ news }: NewsGridProps) {
           ))}
         </div>
       ) : (
-        <p className="text-center py-12 text-[var(--color-text-muted)]">아직 뉴스가 없습니다.</p>
+        <p className="text-center py-12 text-[var(--color-text-muted)]">
+          {subCategory === 'VCT' ? '추후 제공될 예정입니다.' : '아직 뉴스가 없습니다.'}
+        </p>
       )}
     </section>
   )

@@ -4,6 +4,7 @@
 // Google OAuth를 통한 간편 가입 버튼도 함께 제공한다.
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { sendVerificationCode } from '@/lib/api/auth'
 import GoogleLoginButton from '@/components/auth/GoogleLoginButton'
 
@@ -33,6 +34,7 @@ function validateEmail(value: string): string | undefined {
 export default function RegisterStep1({ onNext }: RegisterStep1Props) {
   const [nickname, setNickname] = useState('')
   const [email, setEmail] = useState('')
+  const [agreed, setAgreed] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
 
@@ -119,7 +121,7 @@ export default function RegisterStep1({ onNext }: RegisterStep1Props) {
 
       <button
         type="submit"
-        disabled={isLoading}
+        disabled={isLoading || !agreed}
         className="w-full mt-2 px-4 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-lg transition-colors hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isLoading && (
@@ -128,7 +130,29 @@ export default function RegisterStep1({ onNext }: RegisterStep1Props) {
         {isLoading ? '인증 코드 발송 중...' : '인증 코드 발송'}
       </button>
 
-      <GoogleLoginButton />
+      {/* 약관 동의 */}
+      <label className="flex items-start gap-2 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={agreed}
+          onChange={(e) => setAgreed(e.target.checked)}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-primary cursor-pointer"
+        />
+        <span className="text-sm text-text-secondary">
+          <Link href="/terms" target="_blank" className="text-primary hover:underline">
+            이용약관
+          </Link>
+          {' 및 '}
+          <Link href="/privacy" target="_blank" className="text-primary hover:underline">
+            개인정보처리방침
+          </Link>
+          에 동의합니다.
+        </span>
+      </label>
+
+      <div className={!agreed ? 'opacity-50 pointer-events-none' : ''}>
+        <GoogleLoginButton />
+      </div>
     </form>
   )
 }
