@@ -46,6 +46,9 @@ export class UploadService {
         accessKeyId: this.config.getOrThrow<string>('R2_ACCESS_KEY_ID'),
         secretAccessKey: this.config.getOrThrow<string>('R2_SECRET_ACCESS_KEY'),
       },
+      // R2는 AWS SDK v3의 자동 CRC32 체크섬을 지원하지 않아 403 반환 — 필요 시에만 계산
+      requestChecksumCalculation: 'WHEN_REQUIRED',
+      responseChecksumValidation: 'WHEN_REQUIRED',
     })
   }
 
