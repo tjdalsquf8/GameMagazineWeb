@@ -1,6 +1,6 @@
-// HTML 콘텐츠 XSS 방지 유틸 — isomorphic-dompurify 래퍼 (SSR/CSR 모두 동작)
+// HTML 콘텐츠 XSS 방지 유틸 — 브라우저 전용 DOMPurify 래퍼 (클라이언트 컴포넌트에서만 호출)
 
-import DOMPurify from 'isomorphic-dompurify'
+import DOMPurify from 'dompurify'
 
 const ALLOWED_TAGS = ['p', 'br', 'img', 'strong', 'em', 'u', 'div', 'span']
 const ALLOWED_ATTR = ['src', 'alt', 'class']

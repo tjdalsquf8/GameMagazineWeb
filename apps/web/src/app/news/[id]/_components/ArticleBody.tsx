@@ -1,4 +1,5 @@
-// 뉴스 상세 본문 컴포넌트
+'use client'
+// 뉴스 상세 본문 컴포넌트 — 클라이언트 컴포넌트 (DOMPurify 브라우저 전용)
 // RSS 자동 수집 및 관리자 작성 콘텐츠 모두 렌더링 — sanitizeHTML로 XSS 방지
 
 import { sanitizeHTML } from '@/lib/utils/sanitize'
