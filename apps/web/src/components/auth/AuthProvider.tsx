@@ -2,50 +2,30 @@
 // accessToken은 HttpOnly 쿠키로 서버가 관리하므로 JS에서 직접 쿠키를 설정하지 않음
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useAuthStore } from '@/store/authStore'
-import { env } from '@/lib/env'
-
-const BASE_URL = env.apiUrl
-
-/** refreshToken으로 새 accessToken 발급 요청 — 서버가 HttpOnly 쿠키로 자동 설정 */
-async function silentRefresh(): Promise<string | null> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-    if (!res.ok) return null
-    const json = await res.json()
-    if (!json.success) return null
-    return json.data.accessToken ?? null
-  } catch {
-    return null
-  }
-}
+import { refreshAccessToken } from '@/lib/auth/refreshSingleton'
 
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, accessToken, setAuth, clearAuth, user } = useAuthStore()
+  const { isAuthenticated, accessToken, setAuth, user } = useAuthStore()
+  // StrictMode 더블 마운트 시 중복 호출 방지 — refreshSingleton이 네트워크 단에서도 막아주지만
+  // 불필요한 Promise 생성 자체를 차단해 불필요한 상태 업데이트를 줄임
+  const hasAttempted = useRef(false)
 
   useEffect(() => {
     if (!isAuthenticated || !user) return
-
-    // accessToken이 메모리(스토어)에 있으면 아무것도 하지 않음
-    // (accessToken은 localStorage에 저장되지 않으므로 새로고침 시 항상 null → silentRefresh 실행)
     if (accessToken) return
+    if (hasAttempted.current) return
+    hasAttempted.current = true
 
-    // 메모리에 토큰 없음 → refreshToken 쿠키로 재발급 시도
-    // 서버가 새 accessToken을 HttpOnly 쿠키로 설정하고, 응답 body에도 반환
-    silentRefresh().then((newToken) => {
+    refreshAccessToken().then((newToken) => {
       if (newToken) {
-        // 새 토큰을 스토어(메모리)에만 반영 — 쿠키는 서버가 HttpOnly로 자동 설정
         setAuth(user, newToken)
-      } else {
-        // refreshToken도 만료 → 완전 로그아웃
-        clearAuth()
       }
+      // 실패해도 clearAuth 하지 않음 — accessToken 쿠키가 살아있으면 API 호출은 계속 작동
+      // clearAuth는 apiClient의 401 인터셉터에서 처리
     })
-  }, [isAuthenticated, user, accessToken, setAuth, clearAuth])
+  }, [isAuthenticated, user, accessToken, setAuth])
 
   return <>{children}</>
 }

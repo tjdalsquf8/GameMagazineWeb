@@ -28,7 +28,11 @@ async function fetchArticle(id: string): Promise<EditorPickItem | null> {
   return json.data as EditorPickItem
 }
 
-// 동적 메타데이터 생성 — 제목 기반 SEO
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  'https://game-magazine-web-web-git-develop-cho-seong-mins-projects.vercel.app'
+
+// 동적 메타데이터 생성 — OG 태그 포함
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const article = await fetchArticle(id)
@@ -37,9 +41,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: '에디터 픽을 찾을 수 없습니다' }
   }
 
+  const url = `${SITE_URL}/editor-picks/${id}`
+  const description = `${article.mainCategory} · ${article.authorNickname}`
+
   return {
     title: article.title,
-    description: `${article.mainCategory} · ${article.authorNickname}`,
+    description,
+    openGraph: {
+      title: article.title,
+      description,
+      url,
+      siteName: 'Game Magazine',
+      type: 'article',
+      images: article.thumbnailUrl ? [{ url: article.thumbnailUrl }] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description,
+    },
+    alternates: { canonical: url },
   }
 }
 

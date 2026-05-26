@@ -3,6 +3,8 @@ import type { ApiResponse } from '@/types'
 import { useAuthStore } from '@/store/authStore'
 import { useToastStore } from '@/store/toastStore'
 import { env } from '@/lib/env'
+// AuthProvider와 동일한 싱글톤 사용 — 동시 refresh 레이스 컨디션 방지
+import { refreshAccessToken } from '@/lib/auth/refreshSingleton'
 
 const BASE_URL = env.apiUrl
 
@@ -11,22 +13,6 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 interface RequestOptions {
   headers?: Record<string, string>
   token?: string
-}
-
-// refresh 토큰으로 새 accessToken 발급 — apiClient를 거치지 않아 순환 호출 방지
-async function refreshAccessToken(): Promise<string | null> {
-  try {
-    const res = await fetch(`${BASE_URL}/api/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-    if (!res.ok) return null
-    const json = (await res.json()) as ApiResponse<{ accessToken: string }>
-    if (!json.success) return null
-    return json.data.accessToken ?? null
-  } catch {
-    return null
-  }
 }
 
 // 인증 만료 처리 — 토스트 + 스토어 초기화 + 로그인 페이지 이동

@@ -45,7 +45,11 @@ async function fetchArticle(id: string): Promise<NewsDetail | null> {
   return json.data
 }
 
-// 동적 메타데이터 생성 — 제목/요약 기반 SEO
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  'https://game-magazine-web-web-git-develop-cho-seong-mins-projects.vercel.app'
+
+// 동적 메타데이터 생성 — OG 태그 포함
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params
   const article = await fetchArticle(id)
@@ -54,9 +58,26 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     return { title: '뉴스를 찾을 수 없습니다' }
   }
 
+  const url = `${SITE_URL}/news/${id}`
+
   return {
     title: article.title,
     description: article.summary,
+    openGraph: {
+      title: article.title,
+      description: article.summary,
+      url,
+      siteName: 'Game Magazine',
+      type: 'article',
+      publishedTime: article.createdAt,
+      tags: article.tags,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: article.title,
+      description: article.summary,
+    },
+    alternates: { canonical: url },
   }
 }
 
@@ -70,8 +91,29 @@ export default async function NewsDetailPage({ params }: PageProps) {
     notFound()
   }
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: article.title,
+    description: article.summary,
+    datePublished: article.createdAt,
+    dateModified: article.createdAt,
+    url: `${SITE_URL}/news/${article.id}`,
+    keywords: article.tags.join(', '),
+    publisher: {
+      '@type': 'Organization',
+      name: 'Game Magazine',
+      url: SITE_URL,
+    },
+    articleSection: `${article.mainCategory} > ${article.subCategory}`,
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="flex gap-8 items-start">
         <main className="flex-1 min-w-0">
           <NewsViewCounter newsId={article.id} />
