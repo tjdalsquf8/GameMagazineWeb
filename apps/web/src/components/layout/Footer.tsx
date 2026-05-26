@@ -13,8 +13,7 @@ const LEGAL_LINKS = [
   { label: '개인정보처리방침', href: '/privacy' },
 ]
 
-const INSTAGRAM_URL =
-  'https://www.instagram.com/the_gamemag?igsh=Z2w1M2w2ZGZqdGV0&utm_source=qr'
+const INSTAGRAM_URL = 'https://www.instagram.com/the_gamemag?igsh=Z2w1M2w2ZGZqdGV0&utm_source=qr'
 const CONTACT_EMAIL = 'jscompany0407@gmail.com'
 
 function InstagramIcon() {
@@ -84,7 +83,8 @@ export function Footer() {
               Game Magazine
             </Link>
             <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed max-w-xs">
-              게임 뉴스부터 커뮤니티까지,<br />
+              게임 뉴스부터 커뮤니티까지,
+              <br />
               게임 문화를 함께 만들어가는 공간입니다.
             </p>
             <p className="text-sm text-[var(--color-text-muted)]">

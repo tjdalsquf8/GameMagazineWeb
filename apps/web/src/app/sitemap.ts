@@ -2,7 +2,9 @@
 // 정적 페이지 + DB의 뉴스 기사·에디터픽 URL을 포함
 import type { MetadataRoute } from 'next'
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://game-magazine-web-web-git-develop-cho-seong-mins-projects.vercel.app'
+const BASE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  'https://game-magazine-web-web-git-develop-cho-seong-mins-projects.vercel.app'
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
 
 // 뉴스 기사 ID 목록 조회
@@ -41,9 +43,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date(), changeFrequency: 'hourly', priority: 1 },
-    { url: `${BASE_URL}/community`, lastModified: new Date(), changeFrequency: 'hourly', priority: 0.8 },
-    { url: `${BASE_URL}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${BASE_URL}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    {
+      url: `${BASE_URL}/community`,
+      lastModified: new Date(),
+      changeFrequency: 'hourly',
+      priority: 0.8,
+    },
+    {
+      url: `${BASE_URL}/privacy`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
+    {
+      url: `${BASE_URL}/terms`,
+      lastModified: new Date(),
+      changeFrequency: 'yearly',
+      priority: 0.3,
+    },
   ]
 
   const newsPages: MetadataRoute.Sitemap = newsIds.map((id) => ({
