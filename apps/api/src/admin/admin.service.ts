@@ -948,11 +948,16 @@ export class AdminService {
    - 줄 구성: "The" → 줄바꿈 → "Game" → 줄바꿈 → "mag"
 
    [팔로우 버튼 — 고정]
+   - 태그: <div> (button 태그 사용 금지 — html2canvas 렌더링 불일치 방지)
    - 내용: "팔로우"
+   - display: inline-flex, align-items: center, justify-content: center
+   - text-align: center, line-height: 1
    - margin-top: 10px
    - background: #FFFFFF, color: #111111
    - size: 28px, weight: 800
-   - padding: 12px 56px, border-radius: 40px, border: none
+   - padding: 12px 56px, border-radius: 40px
+   - 반드시 "팔로우" 텍스트가 버튼 수평·수직 중앙에 위치해야 함
+   - box-sizing: border-box
 
 [변수]
 - {{IMAGE_URL}}: 뉴스 대표 이미지 URL

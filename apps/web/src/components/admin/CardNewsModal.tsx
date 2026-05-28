@@ -31,6 +31,7 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
   const fileInputRef = useRef<HTMLInputElement>(null)
   const slideContainerRef = useRef<HTMLDivElement>(null)
   const [slideScale, setSlideScale] = useState(0.35)
+  const slideScaleRef = useRef(0.35)
 
   const { upload, validate, isLoading: isUploading, progress } = useImageUpload()
 
@@ -43,7 +44,9 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
         const totalWidth = slideContainerRef.current.offsetWidth
         const available = Math.max(80, totalWidth - 84) // 버튼 2개 + gap 제외
         const isMobile = window.innerWidth < 640
-        setSlideScale(available / (isMobile ? 1440 : 1080))
+        const s = available / (isMobile ? 1440 : 1080)
+        setSlideScale(s)
+        slideScaleRef.current = s
       }
     }
     updateScale()
@@ -166,6 +169,62 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
 
     // 외부 이미지를 프록시 URL로 교체한 뒤 body에 추가
     replaceExternalImages(clone)
+
+    // ============================
+    // "팔로우" 버튼 정확 재현
+    // ============================
+    // html2canvas가 flex 컨테이너 안 button/div를 stretch 렌더링하는 버그 우회
+    // → 원본 preview에서 "팔로우" 요소의 실제 렌더 크기·스타일을 측정한 뒤
+    //   clone의 해당 요소를 width/height가 명시된 inline-flex span으로 완전 교체
+    const scale = slideScaleRef.current
+
+    // 원본 preview element 안에서 텍스트가 정확히 "팔로우"인 leaf 요소를 찾는다 (button/div 모두 매칭)
+    const findFollowEl = (root: HTMLElement): HTMLElement | null => {
+      const candidates = root.querySelectorAll<HTMLElement>('*')
+      for (const node of Array.from(candidates)) {
+        if (node.children.length === 0 && node.textContent?.trim() === '팔로우') {
+          return node
+        }
+      }
+      return null
+    }
+
+    const liveFollow = findFollowEl(el)
+    const cloneFollow = findFollowEl(clone)
+
+    if (liveFollow && cloneFollow) {
+      const rect = liveFollow.getBoundingClientRect()
+      // CSS transform(scale) 적용 후 화면 크기 → scale로 나눠 1080px 기준 실제 크기 복원
+      const w = Math.round(rect.width / scale)
+      const h = Math.round(rect.height / scale)
+
+      // 원본의 시각 스타일을 보존 (배경, 색상, 폰트, 라운드 등)
+      const cs = window.getComputedStyle(liveFollow)
+      const newEl = document.createElement('span')
+      newEl.textContent = '팔로우'
+      newEl.style.cssText = [
+        'display:inline-flex',
+        'align-items:center',
+        'justify-content:center',
+        `width:${w}px`,
+        `height:${h}px`,
+        `background:${cs.backgroundColor}`,
+        `color:${cs.color}`,
+        `font-size:${cs.fontSize}`,
+        `font-weight:${cs.fontWeight}`,
+        `font-family:${cs.fontFamily}`,
+        `border-radius:${cs.borderRadius}`,
+        `margin-top:${cs.marginTop}`,
+        `letter-spacing:${cs.letterSpacing}`,
+        'box-sizing:border-box',
+        'flex-shrink:0',
+        'flex-grow:0',
+        'align-self:center',
+        'line-height:1',
+      ].join(';')
+      cloneFollow.parentNode?.replaceChild(newEl, cloneFollow)
+    }
+
     document.body.appendChild(clone)
 
     try {
@@ -209,12 +268,13 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
 
   /** 제목 적용 — \n을 <br>로 변환 후 slides[0] HTML 내 기존 제목 교체 */
   const applyTitleEdit = () => {
-    if (!editingTitle.trim() || editingTitle === slideTitle) return
+    if (!editingTitle.trim()) return
     const newTitle = editingTitle.trim().replace(/\n/g, '<br>')
+    if (newTitle === slideTitle) return
     setSlides((prev) =>
       prev.map((html, i) => (i === 0 ? html.replaceAll(slideTitle, newTitle) : html))
     )
-    setSlideTitle(editingTitle.trim())
+    setSlideTitle(newTitle)
   }
 
   /** 재생성 — idle 상태로 초기화 */
