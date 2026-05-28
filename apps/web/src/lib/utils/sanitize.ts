@@ -41,6 +41,7 @@ const CARD_ALLOWED_TAGS = [
   'li',
   'figure',
   'figcaption',
+  'button',
 ]
 const CARD_ALLOWED_ATTR = ['src', 'alt', 'class', 'style', 'width', 'height']
 
