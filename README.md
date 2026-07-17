@@ -32,20 +32,20 @@ AI가 전 세계 RSS 피드를 자동 수집·분류·재작성해 제공하는 
 <table>
   <tr>
     <td align="center">
-      <img src="READMEIMG/KakaoTalk_Photo_2026-07-17-13-13-08-1.png" width="200"/><br/>
+      <img src="READMEIMG/KakaoTalk_Photo_2026-07-17-13-13-12-1.png" width="200"/><br/>
       <sub>뉴스 메인 페이지</sub>
     </td>
     <td align="center">
-      <img src="READMEIMG/KakaoTalk_Photo_2026-07-17-13-13-12-1.png" width="200"/><br/>
+      <img src="READMEIMG/KakaoTalk_Photo_2026-07-17-13-13-26-1.png" width="200"/><br/>
       <sub>뉴스 상세 페이지</sub>
     </td>
     <td align="center">
-      <img src="READMEIMG/KakaoTalk_Photo_2026-07-17-13-13-18-1.png" width="200"/><br/>
-      <sub>카테고리 필터 탐색</sub>
+      <img src="READMEIMG/KakaoTalk_Photo_2026-07-17-13-13-08-1.png" width="200"/><br/>
+      <sub>커뮤니티 게시판</sub>
     </td>
     <td align="center">
-      <img src="READMEIMG/KakaoTalk_Photo_2026-07-17-13-13-26-1.png" width="200"/><br/>
-      <sub>커뮤니티 게시판</sub>
+      <img src="READMEIMG/KakaoTalk_Photo_2026-07-17-13-13-18-1.png" width="200"/><br/>
+      <sub>커뮤니티 게시글 상세</sub>
     </td>
   </tr>
 </table>
