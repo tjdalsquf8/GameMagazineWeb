@@ -178,6 +178,14 @@
 - ✅ **Next.js 신규 CVE 미패치 (14.2.32 → 14.2.35)** — `apps/web/package.json`
   `next@14.2.35`, `eslint-config-next@14.2.35` 업그레이드 완료. CVE-2025-55184, CVE-2025-67779 패치.
 
+- ✅ **Next.js DoS 취약점 (14.2.35 → 15.3.9)** — `apps/web/package.json`
+  HTTP request deserialization을 통한 DoS 공격 가능. `next@15.3.9`, `eslint-config-next@15.3.9` 업그레이드 완료.
+  Next.js 15 마이그레이션으로 `params`가 `Promise<{ id: string }>`로 변경 → `community/[id]/page.tsx`, `community/[id]/edit/page.tsx` await 처리 완료.
+
+- ✅ **sanitize-html xmp 태그 XSS bypass 취약점** — `apps/api/package.json`
+  `<xmp>` 태그를 통해 악성 스크립트가 필터링 우회 가능. `sanitize-html@2.17.4` 업그레이드 완료.
+  (프론트엔드는 sanitize-html 미사용, DOMPurify 직접 사용 중 — 영향 없음)
+
 - ✅ **accessToken localStorage 평문 저장** — `apps/web/src/store/authStore.ts`
   로그인 섹션에서 이미 완료. persist partialize에서 accessToken 제외, silentRefresh 재발급 적용.
 

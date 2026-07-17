@@ -7,11 +7,12 @@ export const metadata: Metadata = {
 }
 
 interface PostPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function PostPage({ params }: PostPageProps) {
-  const postId = Number(params.id)
+export default async function PostPage({ params }: PostPageProps) {
+  const { id } = await params
+  const postId = Number(id)
 
   return (
     <div className="max-w-[800px]">

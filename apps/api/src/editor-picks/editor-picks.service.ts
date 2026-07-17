@@ -7,7 +7,8 @@ import { PrismaService } from '../prisma/prisma.service'
 import { CreateEditorPickDto } from './dto/create-editor-pick.dto'
 import { EditorPickResponseDto } from './dto/editor-pick-response.dto'
 
-// sanitize-html 허용 태그 및 속성 설정
+// [SECURITY] XSS 방어 - 사용자 입력 HTML sanitize
+// sanitize-html 취약점(xmp 태그 XSS bypass) 대응으로 최신 버전 유지 필요
 const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'img', 'a', 'h2', 'h3', 'blockquote'],
   allowedAttributes: {

@@ -2,6 +2,7 @@
 // 정적 페이지 + DB의 뉴스 기사·에디터픽 URL을 포함
 import type { MetadataRoute } from 'next'
 
+// fallback: NEXT_PUBLIC_SITE_URL 환경변수 미설정 시 로컬 개발용 주소 사용 (프로덕션 영향 없음)
 const BASE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   'https://game-magazine-web-web-git-develop-cho-seong-mins-projects.vercel.app'

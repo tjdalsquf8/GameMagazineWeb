@@ -104,7 +104,7 @@ export default function ImageUploadModal({
         }
       }
     },
-    [images.length, currentCount, maxCount, upload, validate, showToast]
+    [images.length, currentCount, maxCount, upload, validate, showToast, folder]
   )
 
   // 파일 input change 핸들러

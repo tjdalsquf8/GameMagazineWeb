@@ -21,6 +21,7 @@ async function bootstrap() {
     throw new Error('[CORS] FRONTEND_URL 환경변수가 설정되지 않았습니다. 배포 환경에서는 반드시 설정 필요.')
   }
 
+  // [SECURITY] CORS - 프로덕션에서 FRONTEND_URL만 허용, credentials:true로 쿠키 전송 허용
   app.enableCors({
     origin: frontendUrl ?? 'http://localhost:3000',
     credentials: true,

@@ -16,7 +16,7 @@
     "html2canvas": "^1.4.1",
     "jose": "^6.2.3",
     "lucide-react": "^1.8.0",
-    "next": "14.2.35",
+    "next": "15.3.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.12"
@@ -28,7 +28,7 @@
     "@types/react-dom": "^18.3.7",
     "autoprefixer": "^10.4.21",
     "eslint": "^8.57.1",
-    "eslint-config-next": "14.2.35",
+    "eslint-config-next": "15.3.9",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.4.0",
     "postcss": "^8.5.3",
