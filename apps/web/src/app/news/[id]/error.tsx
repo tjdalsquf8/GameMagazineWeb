@@ -12,9 +12,13 @@ interface ErrorProps {
 
 // 뉴스 상세 에러 화면 컴포넌트
 export default function NewsDetailError({ error, reset }: ErrorProps) {
+  // [SECURITY] 프로덕션에서 에러 상세 정보 노출 방지 - 스택 트레이스/DB 정보 콘솔 출력 금지
   // 개발 디버깅용 — 화면에는 노출하지 않고 콘솔에만 기록
   useEffect(() => {
-    console.error(error)
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.error(error)
+    }
   }, [error])
 
   return (

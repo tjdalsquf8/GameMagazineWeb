@@ -1,3 +1,5 @@
+// [SECURITY] JWT 검증 전략 - HttpOnly 쿠키에서 토큰 추출, 서명 검증 후 사용자 인증
+// accessToken 1시간, refreshToken 30일(rememberMe) 만료 정책
 import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
@@ -26,6 +28,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     })
   }
 
+  // [SECURITY] JWT 검증 - HttpOnly 쿠키에서 토큰 추출 후 서명 검증
+  // accessToken 1시간, refreshToken 30일(rememberMe) 만료 정책
   async validate(payload: JwtPayload) {
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },
@@ -63,7 +67,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       })
     }
 
-    const { isBanned: _, bannedUntil: __, ...safeUser } = user
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { isBanned: _isBanned, bannedUntil: _bannedUntil, ...safeUser } = user
     return safeUser
   }
 }

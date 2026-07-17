@@ -367,8 +367,8 @@ export default function CardNewsModal({ articleId, articleTitle, onClose }: Prop
                   {/* 업로드 완료: 미리보기 + 재선택 */}
                   {previewUrl && !isUploading && (
                     <div className="relative rounded-lg overflow-hidden border border-[var(--color-border)]">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <div className="w-36 aspect-[4/5] mx-auto">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={previewUrl}
                           alt="배경 이미지 미리보기"

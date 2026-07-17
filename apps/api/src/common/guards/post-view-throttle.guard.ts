@@ -5,6 +5,8 @@ import { Injectable } from '@nestjs/common'
 import { ThrottlerGuard } from '@nestjs/throttler'
 import type { Request } from 'express'
 
+// [SECURITY] Rate Limiting - 브루트포스/DoS 방어
+// 전역: 10req/60s, 뉴스 조회수: IP+ID 24시간 1회, 이메일: 3회/5분
 @Injectable()
 export class PostViewThrottleGuard extends ThrottlerGuard {
   // IP + postId 조합을 키로 사용해 게시글마다 독립적으로 제한

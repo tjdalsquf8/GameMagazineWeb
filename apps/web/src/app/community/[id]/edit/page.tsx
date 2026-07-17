@@ -6,10 +6,11 @@ export const metadata: Metadata = {
 }
 
 interface EditPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default function EditPage({ params }: EditPageProps) {
-  const postId = Number(params.id)
+export default async function EditPage({ params }: EditPageProps) {
+  const { id } = await params
+  const postId = Number(id)
   return <EditForm postId={postId} />
 }

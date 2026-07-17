@@ -1,4 +1,7 @@
 // HTML 콘텐츠 XSS 방지 유틸 — 브라우저 전용 DOMPurify 래퍼 (클라이언트 컴포넌트에서만 호출)
+// [SECURITY] XSS 방어 - DOMPurify로 사용자 입력 HTML sanitize
+// sanitize-html 취약점(CVE: xmp 태그 XSS bypass) 대응으로 최신 버전 유지 필요
+// dangerouslySetInnerHTML 사용 시 반드시 이 함수를 거쳐야 함
 
 import DOMPurify from 'dompurify'
 

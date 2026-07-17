@@ -89,6 +89,8 @@ export class AuthController {
 
     const isProd = this.configService.get<string>('NODE_ENV') === 'production'
 
+    // [SECURITY] HttpOnly 쿠키 사용 - JavaScript에서 토큰 접근 불가(XSS 방어)
+    // sameSite: 'lax' 설정으로 CSRF 방어
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProd,

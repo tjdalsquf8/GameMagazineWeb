@@ -113,6 +113,7 @@ export class CommentsController {
     @Param('commentId', ParseIntPipe) commentId: number,
     @Req() req: AuthenticatedRequest,
   ) {
-    return this.commentsService.remove(postId, commentId, req.user)
+    const data = await this.commentsService.remove(postId, commentId, req.user)
+    return { success: true, data }
   }
 }
